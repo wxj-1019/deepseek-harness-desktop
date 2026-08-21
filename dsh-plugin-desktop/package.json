@@ -254,7 +254,6 @@
   "build": {
     "appId": "ai.deepseek.dsh.desktop",
     "productName": "DSH Desktop",
-    "compression": "store",
     "asar": true,
     "asarUnpack": [
       "package.json",
