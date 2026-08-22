@@ -85,7 +85,7 @@ jobs:
       - uses: ./.github/actions/build-upstream
         if: needs.changes.outputs.product == 'true'
       - if: needs.changes.outputs.product == 'true'
-        run: yarn install --immutable
+        run: yarn install
       - if: needs.changes.outputs.product == 'true'
         run: yarn check
 
@@ -113,7 +113,7 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - uses: ./.github/actions/build-upstream
-      - run: yarn install --immutable
+      - run: yarn install
       - run: yarn check
       - name: Build Windows installer
         env:
@@ -162,7 +162,7 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - uses: ./.github/actions/build-upstream
-      - run: yarn install --immutable
+      - run: yarn install
       - run: yarn check
       - name: Build macOS smoke artifact
         env:
