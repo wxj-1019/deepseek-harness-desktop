@@ -901,6 +901,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@deepseek-ai/dsh-authorization@npm:0.1.1-rc.2":
+  version: 0.1.1-rc.2
+  resolution: "@deepseek-ai/dsh-authorization@npm:0.1.1-rc.2"
+  peerDependencies:
+    "@deepseek-ai/cordis": ^4.0.1
+    "@deepseek-ai/dsh-credentials": ^0.1.1-rc.2
+    "@deepseek-ai/dsh-invariants": ^0.1.1-rc.2
+    "@deepseek-ai/dsh-llm": ^0.1.1-rc.2
+  checksum: 10c0/44e05e613c07670ec2d6a2e64bf31174b86b218dc35474b89dbea61238dcbd90456a4bd84be138bc13959c3f4a912538df1d127d7e15a383e20713bab55772bf
+  languageName: node
+  linkType: hard
+
 "@deepseek-ai/dsh-base@npm:0.1.1-rc.2, @deepseek-ai/dsh-base@npm:^0.1.1-rc.2":
   version: 0.1.1-rc.2
   resolution: "@deepseek-ai/dsh-base@npm:0.1.1-rc.2"
@@ -1620,7 +1632,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@deepseek-ai/dsh-client-ui-settings-plugins@npm:^0.1.1-rc.2":
+"@deepseek-ai/dsh-client-ui-settings-plugins@npm:0.1.1-rc.2, @deepseek-ai/dsh-client-ui-settings-plugins@npm:^0.1.1-rc.2":
   version: 0.1.1-rc.2
   resolution: "@deepseek-ai/dsh-client-ui-settings-plugins@npm:0.1.1-rc.2"
   dependencies:
@@ -2501,7 +2513,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@deepseek-ai/dsh-mcp-client@npm:^0.1.1-rc.2":
+"@deepseek-ai/dsh-mcp-client@npm:0.1.1-rc.2, @deepseek-ai/dsh-mcp-client@npm:^0.1.1-rc.2":
   version: 0.1.1-rc.2
   resolution: "@deepseek-ai/dsh-mcp-client@npm:0.1.1-rc.2"
   dependencies:
@@ -7302,6 +7314,7 @@ __metadata:
     "@deepseek-ai/dsh-app-boot": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-atomic-write": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-attachment": "npm:0.1.1-rc.2"
+    "@deepseek-ai/dsh-authorization": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-base": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-bash-local": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-brand": "npm:0.1.1-rc.2"
@@ -7322,6 +7335,7 @@ __metadata:
     "@deepseek-ai/dsh-client-ui-settings": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-client-ui-settings-dev-checks": "file:../.upstream-publish/packages/client/ui-settings-dev-checks"
     "@deepseek-ai/dsh-client-ui-settings-mcp": "file:../.upstream-publish/packages/client/ui-settings-mcp"
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-client-ui-settings-vision-model": "file:../.upstream-publish/packages/client/ui-settings-vision-model"
     "@deepseek-ai/dsh-client-ui-sidebar": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-client-ui-slots": "npm:0.1.1-rc.2"
@@ -7352,6 +7366,7 @@ __metadata:
     "@deepseek-ai/dsh-llm": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-llm-retry": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-llm-vision-route": "file:../.upstream-publish/packages/llm/llm-vision-route"
+    "@deepseek-ai/dsh-mcp-client": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-mcp-servers": "file:../.upstream-publish/packages/mcp/mcp-servers"
     "@deepseek-ai/dsh-message-feedback": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-output-retention": "npm:0.1.1-rc.2"
