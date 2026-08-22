@@ -1,17 +1,23 @@
 name: Build fork-only upstream packages
 description: >-
-  Install and build the pinned deepseek-harness submodule so the fork-only
-  packages referenced through file: dependencies (lib/) exist before the
-  product workspace resolves them.
+  Install and build the pinned deepseek-harness submodule, then stage the
+  fork-only packages under .upstream-publish/ so the product workspace can
+  resolve them through file: references before `yarn install`.
 runs:
   using: composite
   steps:
     - name: Install upstream workspace
       shell: bash
       working-directory: deepseek-harness
-      run: corepack pnpm install --frozen-lockfile --config.verify-deps-before-run=false
+      # --ignore-scripts skips the lefthook postinstall, which cannot enable
+      # worktree config inside a submodule checkout; dependency installation
+      # itself is unaffected.
+      run: corepack pnpm install --frozen-lockfile --ignore-scripts --config.verify-deps-before-run=false
     - name: Build upstream library faces
       shell: bash
       working-directory: deepseek-harness
       # lib/ artifacts only; the product workspace builds its own web bundle.
       run: corepack pnpm run build:lib --no-verify-deps-before-run
+    - name: Stage fork-only packages for the product workspace
+      shell: bash
+      run: node scripts/prepare-upstream-publish.mjs
