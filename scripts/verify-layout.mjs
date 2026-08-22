@@ -69,6 +69,19 @@ if (typeof upstreamPackage.packageManager !== 'string' || !upstreamPackage.packa
   fail('the upstream checkout must retain its pnpm package manager')
 }
 
+// Fork-only packages that do not exist on the public npm registry are carried
+// into the product through file: references into the pinned upstream submodule
+// (built before packaging); everything else must stay on the published family.
+const FORK_ONLY_FILE_REFS = new Set([
+  'dsh-client-ui-aqua',
+  'dsh-client-ui-desktop-notify',
+  'dsh-client-ui-settings-dev-checks',
+  'dsh-client-ui-settings-mcp',
+  'dsh-client-ui-settings-vision-model',
+  'dsh-llm-vision-route',
+  'dsh-mcp-servers',
+])
+
 for (const [owner, manifest] of [
   ['root', workspace],
   ['desktop', plugin],
@@ -78,8 +91,11 @@ for (const [owner, manifest] of [
   for (const field of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies', 'resolutions']) {
     for (const [name, range] of Object.entries(manifest[field] ?? {})) {
       if (typeof range !== 'string') continue
+      const forkOnlyFileRef = name.startsWith('@deepseek-ai/')
+        && FORK_ONLY_FILE_REFS.has(name.slice('@deepseek-ai/'.length))
+        && range.startsWith('file:../deepseek-harness/packages/')
       if (/^(?:workspace|portal|link):/u.test(range)
-        || (range.startsWith('file:') && range.includes('deepseek-harness'))) {
+        || (range.startsWith('file:') && range.includes('deepseek-harness') && !forkOnlyFileRef)) {
         fail(`${owner} ${field}.${name} bypasses the published DSH package boundary`)
       }
     }
@@ -104,7 +120,16 @@ if (upstreamPackage.version !== upstream.sourceVersion) {
   fail('deepseek-harness package version differs from upstream.json')
 }
 for (const name of Object.keys(plugin.dependencies).filter(name => name === '@deepseek-ai/dsh' || name.startsWith('@deepseek-ai/dsh-'))) {
-  if (plugin.dependencies[name] !== upstream.runtimePackageVersion) {
+  const range = plugin.dependencies[name]
+  // Fork-only packages that do not exist on the public registry are carried
+  // through file: references into the staged publish surface (see
+  // prepare-upstream-publish.mjs); everything else must pin the recorded
+  // runtime family (exact version, or an owner-scope npm alias to it).
+  const shortName = name.startsWith('@deepseek-ai/') ? name.slice('@deepseek-ai/'.length) : name
+  const forkOnlyFileRef = FORK_ONLY_FILE_REFS.has(shortName)
+    && range.startsWith('file:../.upstream-publish/packages/')
+  const alias = /^npm:@wxj-1019\/[^@]+@(.+)$/u.exec(range)
+  if (!forkOnlyFileRef && range !== upstream.runtimePackageVersion && alias?.[1] !== upstream.runtimePackageVersion) {
     fail(`${name} must use the recorded DSH runtime package family`)
   }
 }

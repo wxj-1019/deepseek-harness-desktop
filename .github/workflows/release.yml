@@ -29,6 +29,7 @@ jobs:
         with:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+      - uses: ./.github/actions/build-upstream
       - run: yarn install --immutable
       - run: yarn workspace dsh-community-market build
       - run: yarn workspace dsh-plugin-desktop build

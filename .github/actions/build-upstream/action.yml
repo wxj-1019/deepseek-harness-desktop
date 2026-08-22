@@ -1,0 +1,17 @@
+name: Build fork-only upstream packages
+description: >-
+  Install and build the pinned deepseek-harness submodule so the fork-only
+  packages referenced through file: dependencies (lib/) exist before the
+  product workspace resolves them.
+runs:
+  using: composite
+  steps:
+    - name: Install upstream workspace
+      shell: bash
+      working-directory: deepseek-harness
+      run: corepack pnpm install --frozen-lockfile --config.verify-deps-before-run=false
+    - name: Build upstream library faces
+      shell: bash
+      working-directory: deepseek-harness
+      # lib/ artifacts only; the product workspace builds its own web bundle.
+      run: corepack pnpm run build:lib --no-verify-deps-before-run
