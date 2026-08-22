@@ -1041,6 +1041,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@deepseek-ai/dsh-client-connection@file:../.upstream-publish/packages/client/connection::locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop":
+  version: 0.1.1-rc.2
+  resolution: "@deepseek-ai/dsh-client-connection@file:../.upstream-publish/packages/client/connection#../.upstream-publish/packages/client/connection::hash=fc5764&locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop"
+  dependencies:
+    "@deepseek-ai/schemastery": "npm:^3.18.1"
+    ws: "npm:^8.21.0"
+  peerDependencies:
+    "@deepseek-ai/cordis": 4.0.1
+    "@deepseek-ai/dsh-attachment": 0.1.1-rc.2
+    "@deepseek-ai/dsh-commands": 0.1.1-rc.2
+    "@deepseek-ai/dsh-host-apiproxy": 0.1.1-rc.2
+    "@deepseek-ai/dsh-host-webserver": 0.1.1-rc.2
+    "@deepseek-ai/dsh-invariants": 0.1.1-rc.2
+    "@deepseek-ai/dsh-llm": 0.1.1-rc.2
+    "@deepseek-ai/dsh-session": 0.1.1-rc.2
+    "@deepseek-ai/dsh-tools": 0.1.1-rc.2
+  checksum: 10c0/c023e153cc9d562fb1c875f47dcf45cbcbf934aed813ca7a2357bed89a5a8674e16aefd90cd51ff3584891635f669d783c650949e2c0fe8f3a33ef28f9594e86
+  languageName: node
+  linkType: hard
+
 "@deepseek-ai/dsh-client-connection@npm:0.1.1-rc.2, @deepseek-ai/dsh-client-connection@npm:^0.1.1-rc.2":
   version: 0.1.1-rc.2
   resolution: "@deepseek-ai/dsh-client-connection@npm:0.1.1-rc.2"
@@ -1573,7 +1593,7 @@ __metadata:
 
 "@deepseek-ai/dsh-client-ui-settings-mcp@file:../.upstream-publish/packages/client/ui-settings-mcp::locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop":
   version: 0.1.0-rc.8
-  resolution: "@deepseek-ai/dsh-client-ui-settings-mcp@file:../.upstream-publish/packages/client/ui-settings-mcp#../.upstream-publish/packages/client/ui-settings-mcp::hash=24743d&locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop"
+  resolution: "@deepseek-ai/dsh-client-ui-settings-mcp@file:../.upstream-publish/packages/client/ui-settings-mcp#../.upstream-publish/packages/client/ui-settings-mcp::hash=a7d7a8&locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop"
   peerDependencies:
     "@deepseek-ai/cordis": 4.0.1
     "@deepseek-ai/dsh-api-remotes": 0.1.1-rc.2
@@ -1584,7 +1604,7 @@ __metadata:
     "@deepseek-ai/dsh-client-ui-slots": 0.1.1-rc.2
     "@deepseek-ai/dsh-invariants": 0.1.1-rc.2
     react: ^18.2.0
-  checksum: 10c0/bd97286dbc3147340ae59ab275d403a0edad2f3177101d731e3c7cc05fda8de2d908fbf98ec006710d45ba6c25f740730438d36d4da1602b00a3d999e8d080e0
+  checksum: 10c0/43c083e57ce2372c9dfdb1237048052780cd78d455ef332d840aa9d3a9983a2eb41208feb8648b8a236ac9323b44da2ad990e75343d9c7ff02359cabd1335f10
   languageName: node
   linkType: hard
 
@@ -2513,7 +2533,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@deepseek-ai/dsh-mcp-client@npm:0.1.1-rc.2, @deepseek-ai/dsh-mcp-client@npm:^0.1.1-rc.2":
+"@deepseek-ai/dsh-mcp-client@file:../.upstream-publish/packages/mcp/mcp-client::locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop":
+  version: 0.1.1-rc.2
+  resolution: "@deepseek-ai/dsh-mcp-client@file:../.upstream-publish/packages/mcp/mcp-client#../.upstream-publish/packages/mcp/mcp-client::hash=b00abd&locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop"
+  dependencies:
+    "@deepseek-ai/schemastery": "npm:^3.18.1"
+    "@modelcontextprotocol/sdk": "npm:^1.12.0"
+    zod: "npm:^4.4.3"
+  peerDependencies:
+    "@deepseek-ai/cordis": 4.0.1
+    "@deepseek-ai/dsh-attachment": 0.1.1-rc.2
+    "@deepseek-ai/dsh-invariants": 0.1.1-rc.2
+    "@deepseek-ai/dsh-llm": 0.1.1-rc.2
+    "@deepseek-ai/dsh-subprocess": 0.1.1-rc.2
+    "@deepseek-ai/dsh-timeout": 0.1.1-rc.2
+    "@deepseek-ai/dsh-tools": 0.1.1-rc.2
+  checksum: 10c0/ac3f18845ad987b084e65f6662a7220446122921602791c31691ecec33d2d32d0973c2e996d02276ca6ce3832dc743c48889f1838efbfa765ff350b02e0bc616
+  languageName: node
+  linkType: hard
+
+"@deepseek-ai/dsh-mcp-client@npm:^0.1.1-rc.2":
   version: 0.1.1-rc.2
   resolution: "@deepseek-ai/dsh-mcp-client@npm:0.1.1-rc.2"
   dependencies:
@@ -7318,7 +7357,7 @@ __metadata:
     "@deepseek-ai/dsh-base": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-bash-local": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-brand": "npm:0.1.1-rc.2"
-    "@deepseek-ai/dsh-client-connection": "npm:0.1.1-rc.2"
+    "@deepseek-ai/dsh-client-connection": "file:../.upstream-publish/packages/client/connection"
     "@deepseek-ai/dsh-client-locale": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-client-modules": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-client-runtime": "npm:0.1.1-rc.2"
@@ -7366,7 +7405,7 @@ __metadata:
     "@deepseek-ai/dsh-llm": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-llm-retry": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-llm-vision-route": "file:../.upstream-publish/packages/llm/llm-vision-route"
-    "@deepseek-ai/dsh-mcp-client": "npm:0.1.1-rc.2"
+    "@deepseek-ai/dsh-mcp-client": "file:../.upstream-publish/packages/mcp/mcp-client"
     "@deepseek-ai/dsh-mcp-servers": "file:../.upstream-publish/packages/mcp/mcp-servers"
     "@deepseek-ai/dsh-message-feedback": "npm:0.1.1-rc.2"
     "@deepseek-ai/dsh-output-retention": "npm:0.1.1-rc.2"

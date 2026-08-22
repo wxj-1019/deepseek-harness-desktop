@@ -73,12 +73,14 @@ if (typeof upstreamPackage.packageManager !== 'string' || !upstreamPackage.packa
 // into the product through file: references into the pinned upstream submodule
 // (built before packaging); everything else must stay on the published family.
 const FORK_ONLY_FILE_REFS = new Set([
+  'dsh-client-connection',
   'dsh-client-ui-aqua',
   'dsh-client-ui-desktop-notify',
   'dsh-client-ui-settings-dev-checks',
   'dsh-client-ui-settings-mcp',
   'dsh-client-ui-settings-vision-model',
   'dsh-llm-vision-route',
+  'dsh-mcp-client',
   'dsh-mcp-servers',
 ])
 

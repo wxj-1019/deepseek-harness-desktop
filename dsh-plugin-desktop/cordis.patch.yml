@@ -27,6 +27,7 @@
 - insert:
     - id: mcp-servers
       name: '@deepseek-ai/dsh-mcp-servers'
+      group: true
     - id: llm-vision-route
       name: '@deepseek-ai/dsh-llm-vision-route'
     - id: ui-aqua

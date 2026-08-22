@@ -20,12 +20,14 @@ const RUNTIME_VERSION = JSON.parse(readFileSync(join(ROOT, 'upstream.json'), 'ut
 
 /** Fork-only package directory -> npm name. */
 const FORK_ONLY = {
+  'client/connection': 'dsh-client-connection',
   'client/ui-aqua': 'dsh-client-ui-aqua',
   'client/ui-desktop-notify': 'dsh-client-ui-desktop-notify',
   'client/ui-settings-dev-checks': 'dsh-client-ui-settings-dev-checks',
   'client/ui-settings-mcp': 'dsh-client-ui-settings-mcp',
   'client/ui-settings-vision-model': 'dsh-client-ui-settings-vision-model',
   'llm/llm-vision-route': 'dsh-llm-vision-route',
+  'mcp/mcp-client': 'dsh-mcp-client',
   'mcp/mcp-servers': 'dsh-mcp-servers',
 }
 
