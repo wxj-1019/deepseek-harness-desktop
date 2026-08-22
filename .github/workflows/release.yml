@@ -30,7 +30,7 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - uses: ./.github/actions/build-upstream
-      - run: yarn install
+      - run: yarn install --no-immutable
       - run: yarn workspace dsh-community-market build
       - run: yarn workspace dsh-plugin-desktop build
       - name: Build Windows installer
