@@ -124,12 +124,11 @@ for (const name of Object.keys(plugin.dependencies).filter(name => name === '@de
   // Fork-only packages that do not exist on the public registry are carried
   // through file: references into the staged publish surface (see
   // prepare-upstream-publish.mjs); everything else must pin the recorded
-  // runtime family (exact version, or an owner-scope npm alias to it).
+  // runtime family.
   const shortName = name.startsWith('@deepseek-ai/') ? name.slice('@deepseek-ai/'.length) : name
   const forkOnlyFileRef = FORK_ONLY_FILE_REFS.has(shortName)
     && range.startsWith('file:../.upstream-publish/packages/')
-  const alias = /^npm:@wxj-1019\/[^@]+@(.+)$/u.exec(range)
-  if (!forkOnlyFileRef && range !== upstream.runtimePackageVersion && alias?.[1] !== upstream.runtimePackageVersion) {
+  if (!forkOnlyFileRef && range !== upstream.runtimePackageVersion) {
     fail(`${name} must use the recorded DSH runtime package family`)
   }
 }

@@ -72,18 +72,24 @@ const resolutions = rootManifest.resolutions ?? {}
 let resolutionsChanged = false
 for (const [name, spec] of Object.entries(resolutions)) {
   if (!name.startsWith('@deepseek-ai/dsh')) continue
-  // The resolution key may carry a range prefix (`@npm:^0.1.0-rc.7`), while
-  // the encoded spec URL and the patch file name use the bare version.
+  // The resolution key may carry a range prefix (`@npm:^0.1.1-rc.2`), while
+  // the encoded spec URL and the patch file name use the bare version. The
+  // rewrite is idempotent: a key already at the runtime version still gets
+  // its spec and patch file checked, so a partially-updated state heals.
   const match = /^@deepseek-ai\/(dsh-[^@]+)@npm:(\^)?(.+)$/.exec(name)
   if (match === null) continue
   const [, pkg, caret, oldVersion] = match
   const newName = `@deepseek-ai/${pkg}@npm:${caret ?? ''}${runtime}`
-  if (newName === name) continue
   const newSpec = spec.replace(`@npm%3A${oldVersion}`, `@npm%3A${runtime}`)
     .replace(`#./patches/${pkg}@${oldVersion}.patch`, `#./patches/${pkg}@${runtime}.patch`)
-  delete resolutions[name]
-  resolutions[newName] = newSpec
-  resolutionsChanged = true
+  if (newName !== name) {
+    delete resolutions[name]
+    resolutions[newName] = newSpec
+    resolutionsChanged = true
+  } else if (newSpec !== spec) {
+    resolutions[newName] = newSpec
+    resolutionsChanged = true
+  }
   const oldPatch = resolve(root, `patches/${pkg}@${oldVersion}.patch`)
   const newPatch = resolve(root, `patches/${pkg}@${runtime}.patch`)
   if (existsSync(oldPatch) && !existsSync(newPatch)) {
@@ -97,3 +103,4 @@ if (resolutionsChanged) writeJson('package.json', rootManifest)
 run('node', ['scripts/verify-layout.mjs'], root)
 console.log(`sync-upstream: pinned ${target.slice(0, 10)} (source ${source}, runtime ${runtime}) — layout verified`)
 console.log('sync-upstream: run `yarn install` next; patches that no longer apply must be re-recorded manually')
+console.log('sync-upstream: then `node scripts/prepare-upstream-publish.mjs` (after the upstream build) to refresh .upstream-publish/')
