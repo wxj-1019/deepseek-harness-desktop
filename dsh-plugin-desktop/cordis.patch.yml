@@ -21,6 +21,25 @@
     - id: desktop-updates
       name: dsh-plugin-desktop/updates
 
+# Fork-only plugins the official web-app composition cannot reference: they
+# exist only in this product (carried through .upstream-publish), so the
+# desktop patch layer declares them on top of the official bundle.
+- insert:
+    - id: mcp-servers
+      name: '@deepseek-ai/dsh-mcp-servers'
+    - id: llm-vision-route
+      name: '@deepseek-ai/dsh-llm-vision-route'
+    - id: ui-aqua
+      name: '@deepseek-ai/dsh-client-ui-aqua'
+    - id: ui-desktop-notify
+      name: '@deepseek-ai/dsh-client-ui-desktop-notify'
+    - id: ui-settings-dev-checks
+      name: '@deepseek-ai/dsh-client-ui-settings-dev-checks'
+    - id: ui-settings-mcp
+      name: '@deepseek-ai/dsh-client-ui-settings-mcp'
+    - id: ui-settings-vision-model
+      name: '@deepseek-ai/dsh-client-ui-settings-vision-model'
+
 # A desktop launch has no terminal operator waiting for the Web readiness line.
 - id: web-runtime
   config:
