@@ -40,6 +40,11 @@
       name: '@deepseek-ai/dsh-client-ui-settings-mcp'
     - id: ui-settings-vision-model
       name: '@deepseek-ai/dsh-client-ui-settings-vision-model'
+    # dsh-better-sidebar: the community VSCode-style workbench the fork's
+    # web-app bundle composes; third-party npm package pinned at the fork's
+    # 0.13 line (0.15.2 is quarantined by Yarn's malicious-package feed).
+    - id: better-sidebar
+      name: 'dsh-better-sidebar'
 
 # A desktop launch has no terminal operator waiting for the Web readiness line.
 - id: web-runtime
