@@ -1561,7 +1561,7 @@ __metadata:
 
 "@deepseek-ai/dsh-client-ui-settings-mcp@file:../.upstream-publish/packages/client/ui-settings-mcp::locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop":
   version: 0.1.0-rc.8
-  resolution: "@deepseek-ai/dsh-client-ui-settings-mcp@file:../.upstream-publish/packages/client/ui-settings-mcp#../.upstream-publish/packages/client/ui-settings-mcp::hash=c7af5a&locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop"
+  resolution: "@deepseek-ai/dsh-client-ui-settings-mcp@file:../.upstream-publish/packages/client/ui-settings-mcp#../.upstream-publish/packages/client/ui-settings-mcp::hash=24743d&locator=dsh-plugin-desktop%40workspace%3Adsh-plugin-desktop"
   peerDependencies:
     "@deepseek-ai/cordis": 4.0.1
     "@deepseek-ai/dsh-api-remotes": 0.1.1-rc.2
@@ -1572,7 +1572,7 @@ __metadata:
     "@deepseek-ai/dsh-client-ui-slots": 0.1.1-rc.2
     "@deepseek-ai/dsh-invariants": 0.1.1-rc.2
     react: ^18.2.0
-  checksum: 10c0/d5571d9fee62d8e64317de2734f912c88b18f5476c44ed3b1eabcf485fd4bf55eb610a97593e47910852e814ceafe8810d26a44c0d589fc40f1eb315a0ad3033
+  checksum: 10c0/bd97286dbc3147340ae59ab275d403a0edad2f3177101d731e3c7cc05fda8de2d908fbf98ec006710d45ba6c25f740730438d36d4da1602b00a3d999e8d080e0
   languageName: node
   linkType: hard
 
