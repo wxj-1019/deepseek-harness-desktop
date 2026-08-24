@@ -45,10 +45,12 @@ const STATE_FILE = join(DESKTOP_ROOT, 'node_modules', '.upstream-inject-state.js
  */
 
 function defaultRun(command, args, cwd) {
-  const resolvedCommand = process.platform === 'win32' && command === 'corepack'
-    ? 'corepack.cmd'
-    : command
-  const result = spawnSync(resolvedCommand, args, { cwd, stdio: 'inherit' })
+  const isCmdShim = process.platform === 'win32' && command === 'corepack'
+  const result = spawnSync(command, args, {
+    cwd,
+    stdio: 'inherit',
+    shell: isCmdShim,
+  })
   if (result.error !== undefined) throw result.error
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} exited with ${String(result.status)}`)
