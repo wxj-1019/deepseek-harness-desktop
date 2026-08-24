@@ -176,9 +176,18 @@ export function packageWindowsInstaller(
   packageWindowsArtifact(options, 'nsis', 'installer')
 }
 
+/** Inject the pinned upstream fork build before the electron-builder step. */
+export function runUpstreamInjection(
+  options: WindowsPackageOptions = createWindowsPackageOptions(),
+): void {
+  const injectScript = fileURLToPath(new URL('./inject-upstream.mjs', import.meta.url))
+  options.run(options.nodeExecutable, [injectScript], options.desktopRoot, options.env)
+}
+
 const invokedPath = process.argv[1]
 if (invokedPath !== undefined && resolve(invokedPath) === fileURLToPath(import.meta.url)) {
   try {
+    runUpstreamInjection()
     packageWindowsInstaller()
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))

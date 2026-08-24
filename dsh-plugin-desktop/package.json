@@ -302,6 +302,28 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "extraResources": [
+      {
+        "from": "node_modules/@deepseek-ai/dsh-client-ui-aqua",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-ui-aqua"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-client-ui-settings-vision-model",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-ui-settings-vision-model"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-client-ui-settings-dev-checks",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-ui-settings-dev-checks"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-client-ui-desktop-notify",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-ui-desktop-notify"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-client-ui-settings-mcp",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-ui-settings-mcp"
+      }
+    ],
     "toolsets": {
       "nsis": "1.2.1"
     },
