@@ -61,16 +61,18 @@ function defaultLog(message) {
   console.log(message)
 }
 
-/** List the upstream workspace package directories worth injecting. */
-export function upstreamPackageDirs(submoduleDir) {
+/** List upstream workspace package directories (packages, apps, plugins, vendored). */
+export function upstreamPackageDirs(submoduleDir, includeVendor = false) {
   const dirs = []
-  for (const area of ['packages', 'apps']) {
+  const flatAreas = ['apps', 'plugins']
+  if (includeVendor) flatAreas.push('vendor')
+  for (const area of ['packages', ...flatAreas]) {
     const areaDir = join(submoduleDir, area)
     if (!existsSync(areaDir)) continue
     for (const group of readdirSync(areaDir)) {
       const groupDir = join(areaDir, group)
       if (!statSync(groupDir).isDirectory()) continue
-      if (area === 'apps') {
+      if (area !== 'packages') {
         if (existsSync(join(groupDir, 'package.json'))) dirs.push(groupDir)
         continue
       }
@@ -82,6 +84,13 @@ export function upstreamPackageDirs(submoduleDir) {
     }
   }
   return dirs
+}
+
+/** Map a package name to its node_modules install path. */
+export function packageInstallPath(nodeModulesRoot, name) {
+  return name.startsWith('@')
+    ? join(nodeModulesRoot, ...name.split('/'))
+    : join(nodeModulesRoot, name)
 }
 
 /** Resolve the publish slice (package.json `files`) of an upstream package. */
@@ -120,12 +129,48 @@ export function collectGlobFiles(rootDir, pattern) {
   return matches
 }
 
-/** Copy one upstream package's publish slice into the desktop install tree. */
-export function injectPackageFiles(pkgDir, targetDir, pkgJson, includeManifest) {
-  mkdirSync(targetDir, { recursive: true })
-  if (includeManifest) {
-    cpSync(join(pkgDir, 'package.json'), join(targetDir, 'package.json'))
+/**
+ * Convert one `workspace:` range to a concrete npm range so the injected
+ * manifest stays resolvable by electron-builder's dependency collector.
+ */
+export function resolveWorkspaceRange(name, range, versionIndex) {
+  if (typeof range !== 'string' || !range.startsWith('workspace:')) return range
+  const rest = range.slice('workspace:'.length)
+  if (rest === '*' || rest === '^' || rest === '~' || rest === '') {
+    const version = versionIndex[name]
+    if (version === undefined) return '*'
+    return rest === '*' || rest === '' ? version : `${rest}${version}`
   }
+  return rest
+}
+
+/**
+ * Prepare an upstream manifest for the install tree: keep the upstream
+ * `exports` (fork-only subpaths such as `./trust` must stay resolvable),
+ * convert workspace ranges to concrete versions, and drop dev dependencies.
+ */
+export function transformUpstreamManifest(pkgJson, versionIndex) {
+  const transformed = { ...pkgJson }
+  delete transformed.devDependencies
+  for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+    const deps = transformed[field]
+    if (deps === undefined || typeof deps !== 'object') continue
+    const converted = {}
+    for (const [name, range] of Object.entries(deps)) {
+      converted[name] = resolveWorkspaceRange(name, range, versionIndex)
+    }
+    transformed[field] = converted
+  }
+  return transformed
+}
+
+/** Copy one upstream package's publish slice and converted manifest. */
+export function injectPackageFiles(pkgDir, targetDir, pkgJson, versionIndex) {
+  mkdirSync(targetDir, { recursive: true })
+  writeFileSync(
+    join(targetDir, 'package.json'),
+    `${JSON.stringify(transformUpstreamManifest(pkgJson, versionIndex), null, 2)}\n`,
+  )
   for (const pattern of upstreamPackageFiles(pkgDir, pkgJson)) {
     const hasGlob = /[*?[\]]/u.test(pattern)
     const relFiles = hasGlob
@@ -475,14 +520,24 @@ export function injectUpstream(options = {}) {
   const added = []
   const patchFiles = desktopPatchFiles(workspaceRoot, patchesDir)
 
-  for (const pkgDir of upstreamPackageDirs(submoduleDir)) {
+  const allDirs = upstreamPackageDirs(submoduleDir, true)
+  const versionIndex = {}
+  for (const pkgDir of allDirs) {
+    const pkgJson = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
+    if (typeof pkgJson.name === 'string' && typeof pkgJson.version === 'string') {
+      versionIndex[pkgJson.name] = pkgJson.version
+    }
+  }
+
+  const nodeModulesRoot = join(desktopRoot, 'node_modules')
+  for (const pkgDir of allDirs) {
     const pkgJson = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
     const name = pkgJson.name
-    if (typeof name !== 'string' || !name.startsWith('@deepseek-ai/')) continue
-    const shortName = name.slice('@deepseek-ai/'.length)
-    const targetDir = join(scope, shortName)
+    if (typeof name !== 'string' || name.length === 0) continue
+    if (pkgDir.startsWith(join(submoduleDir, 'vendor'))) continue
+    const targetDir = packageInstallPath(nodeModulesRoot, name)
     const isOrphan = !existsSync(join(targetDir, 'package.json'))
-    injectPackageFiles(pkgDir, targetDir, pkgJson, isOrphan)
+    injectPackageFiles(pkgDir, targetDir, pkgJson, versionIndex)
     if (isOrphan) {
       added.push(name)
     } else {

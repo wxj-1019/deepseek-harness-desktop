@@ -189,17 +189,45 @@ describe('injectPackageFiles', () => {
     writeFileSync(join(source, 'lib', 'types', 'index.d.ts'), 'export {}')
     writeFileSync(join(source, 'cordis.patch.yml'), 'x')
     writeFileSync(join(source, 'unlisted.txt'), 'x')
-    inject.injectPackageFiles(
-      source,
-      join(target, 'dsh-x'),
-      JSON.parse(readFileSync(join(source, 'package.json'), 'utf8')),
-      true,
-    )
+    inject.injectPackageFiles(source, join(target, 'dsh-x'), {
+      name: '@deepseek-ai/dsh-x',
+      files: ['lib/index.js', 'lib/types/**/*.d.ts', 'cordis.patch.yml'],
+    }, {})
     const targetRoot = join(target, 'dsh-x')
     expect(readFileSync(join(targetRoot, 'lib', 'index.js'), 'utf8')).toBe('export {}')
     expect(readFileSync(join(targetRoot, 'lib', 'types', 'index.d.ts'), 'utf8')).toBe('export {}')
     expect(readFileSync(join(targetRoot, 'cordis.patch.yml'), 'utf8')).toBe('x')
     expect(readFileSync(join(targetRoot, 'package.json'), 'utf8')).toContain('dsh-x')
     expect(() => readFileSync(join(targetRoot, 'unlisted.txt'))).toThrow()
+  })
+})
+
+describe('transformUpstreamManifest', () => {
+  it('keeps upstream exports and converts workspace ranges', () => {
+    const manifest = {
+      name: '@deepseek-ai/dsh-x',
+      version: '0.1.1-rc.2',
+      exports: { '.': './lib/index.js', './trust': './lib/trust.js' },
+      dependencies: {
+        '@deepseek-ai/dsh-y': 'workspace:^0.1.1-rc.2',
+        '@deepseek-ai/dsh-client-ui-aqua': 'workspace:^',
+        '@deepseek-ai/dsh-z': 'workspace:*',
+        '@deepseek-ai/cordis': '^4.0.1',
+      },
+      peerDependencies: { '@deepseek-ai/dsh-w': 'workspace:~' },
+      devDependencies: { '@deepseek-ai/dsh-dev': 'workspace:*' },
+    }
+    const transformed = inject.transformUpstreamManifest(manifest, {
+      '@deepseek-ai/dsh-client-ui-aqua': '0.1.0-rc.5',
+      '@deepseek-ai/dsh-z': '1.2.3',
+      '@deepseek-ai/dsh-w': '2.0.0',
+    })
+    expect(transformed.exports['./trust']).toBe('./lib/trust.js')
+    expect(transformed.dependencies['@deepseek-ai/dsh-y']).toBe('^0.1.1-rc.2')
+    expect(transformed.dependencies['@deepseek-ai/dsh-client-ui-aqua']).toBe('^0.1.0-rc.5')
+    expect(transformed.dependencies['@deepseek-ai/dsh-z']).toBe('1.2.3')
+    expect(transformed.dependencies['@deepseek-ai/cordis']).toBe('^4.0.1')
+    expect(transformed.peerDependencies['@deepseek-ai/dsh-w']).toBe('~2.0.0')
+    expect(transformed.devDependencies).toBeUndefined()
   })
 })

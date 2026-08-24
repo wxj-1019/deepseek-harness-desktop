@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-desktop",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "DSH Desktop: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "license": "MIT",
   "publishConfig": {
@@ -243,7 +243,12 @@
     "@deepseek-ai/dsh-web-app": "0.1.1-rc.2",
     "@deepseek-ai/dsh-workflow": "0.1.1-rc.2",
     "@deepseek-ai/schemastery": "^3.18.1",
+    "@yeesy369/dsh-browser": "0.5.1",
+    "@yeesy369/dsh-browser-playwright": "0.6.1",
+    "@yeesy369/dsh-tool-browser": "0.5.1",
+    "@yeesy369/dsh-web-permission": "0.4.1",
     "adm-zip": "^0.6.0",
+    "dsh-better-sidebar": "0.13.0",
     "dsh-community-market": "0.1.0-dev.0",
     "dshmarket": "1.17.1",
     "koffi": "3.1.5",
@@ -322,6 +327,10 @@
       {
         "from": "node_modules/@deepseek-ai/dsh-client-ui-settings-mcp",
         "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-ui-settings-mcp"
+      },
+      {
+        "from": "node_modules/@openviking",
+        "to": "app.asar.unpacked/node_modules/@openviking"
       }
     ],
     "toolsets": {
