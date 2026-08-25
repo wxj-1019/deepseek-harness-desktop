@@ -72,15 +72,32 @@ describe('splitPatchHunks', () => {
 })
 
 describe('patchPackageName', () => {
-  it('derives the @deepseek-ai package from a patch file name', () => {
-    expect(inject.patchPackageName('dsh-app-boot@0.1.1-rc.2.patch')).toBe('@deepseek-ai/dsh-app-boot')
+  it('derives the dsh short name from a patch file name', () => {
+    expect(inject.patchPackageName('dsh-app-boot@0.1.1-rc.2.patch')).toBe('dsh-app-boot')
     expect(inject.patchPackageName('dsh-client-ui-workspace@0.1.1-rc.2.patch')).toBe(
-      '@deepseek-ai/dsh-client-ui-workspace',
+      'dsh-client-ui-workspace',
     )
+    expect(inject.patchPackageName('dsh-better-sidebar@0.13.0.patch')).toBe('dsh-better-sidebar')
   })
 
   it('returns null for non-dsh patches', () => {
     expect(inject.patchPackageName('app-builder-lib@26.15.7.patch')).toBeNull()
+  })
+})
+
+describe('findPatchTarget', () => {
+  it('prefers the @deepseek-ai scope and falls back to the bare name', () => {
+    const root = tempDir()
+    const scope = join(root, '@deepseek-ai')
+    mkdirSync(join(scope, 'dsh-app-boot'), { recursive: true })
+    writeFileSync(join(scope, 'dsh-app-boot', 'package.json'), '{}')
+    mkdirSync(join(root, 'dsh-better-sidebar'), { recursive: true })
+    writeFileSync(join(root, 'dsh-better-sidebar', 'package.json'), '{}')
+    expect(inject.findPatchTarget(scope, root, 'dsh-app-boot')).toBe(join(scope, 'dsh-app-boot'))
+    expect(inject.findPatchTarget(scope, root, 'dsh-better-sidebar')).toBe(
+      join(root, 'dsh-better-sidebar'),
+    )
+    expect(inject.findPatchTarget(scope, root, 'dsh-missing')).toBeNull()
   })
 })
 

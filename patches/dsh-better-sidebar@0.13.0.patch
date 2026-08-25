@@ -1,0 +1,56 @@
+diff --git a/lib/client.js b/lib/client.js
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -1351,3 +1351,23 @@
+ 		function moduleSystem() {
+-			return globalThis.__DSH_MODULES__;
++			const existing = globalThis.__DSH_MODULES__;
++			if (existing !== void 0) return existing;
++			const loader = globalThis.__ModuleLoader__;
++			if (loader === void 0) return void 0;
++			let bridgeRequire;
++			try {
++				loader.load({
++					id: "dsh-better-sidebar/modules-bridge",
++					factory: (require) => {
++						bridgeRequire = require;
++					}
++				});
++			} catch {
++				return void 0;
++			}
++			if (bridgeRequire === void 0) return void 0;
++			const bridge = {
++				import: (spec) => Promise.resolve().then(() => bridgeRequire(spec))
++			};
++			globalThis.__DSH_MODULES__ = bridge;
++			return bridge;
+ 		}
+diff --git a/lib/client-registry.js b/lib/client-registry.js
+--- a/lib/client-registry.js
++++ b/lib/client-registry.js
+@@ -1351,3 +1351,23 @@
+ 		function moduleSystem() {
+-			return globalThis.__DSH_MODULES__;
++			const existing = globalThis.__DSH_MODULES__;
++			if (existing !== void 0) return existing;
++			const loader = globalThis.__ModuleLoader__;
++			if (loader === void 0) return void 0;
++			let bridgeRequire;
++			try {
++				loader.load({
++					id: "dsh-better-sidebar/modules-bridge",
++					factory: (require) => {
++						bridgeRequire = require;
++					}
++				});
++			} catch {
++				return void 0;
++			}
++			if (bridgeRequire === void 0) return void 0;
++			const bridge = {
++				import: (spec) => Promise.resolve().then(() => bridgeRequire(spec))
++			};
++			globalThis.__DSH_MODULES__ = bridge;
++			return bridge;
+ 		}

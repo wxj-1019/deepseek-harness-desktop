@@ -420,6 +420,14 @@ export function replayPatch(packageDir, patchFile, run) {
         try {
           run('git', ['apply', miniPatch], staging)
         } catch {
+          let alreadyApplied = false
+          try {
+            run('git', ['apply', '--reverse', '--check', miniPatch], staging)
+            alreadyApplied = true
+          } catch {
+            // not applied yet
+          }
+          if (alreadyApplied) continue
           if (!applyHunkTolerant(staging, segment.rel, hunk.text)) {
             throw new Error(`inject-upstream: patch hunk did not apply to ${segment.rel}`)
           }
@@ -454,13 +462,21 @@ export function desktopPatchFiles(workspaceRoot, patchesDir) {
 }
 
 /**
- * Derive the @deepseek-ai package name from a patch file name, or null when
- * the patch targets a non-dsh package (e.g. electron-builder).
+ * Derive the dsh package short name from a patch file name, or null when the
+ * patch targets a non-dsh package (e.g. electron-builder).
  */
 export function patchPackageName(patchFile) {
   const base = patchFile.split(/[\\/]/u).at(-1) ?? ''
   const match = /^(dsh-.+)@.+\..*$/u.exec(base)
-  return match === null ? null : `@deepseek-ai/${match[1]}`
+  return match === null ? null : match[1]
+}
+
+/** Locate the install-tree directory a patched package lives in. */
+export function findPatchTarget(scope, nodeModulesRoot, shortName) {
+  const scoped = join(scope, shortName)
+  if (existsSync(join(scoped, 'package.json'))) return scoped
+  const bare = join(nodeModulesRoot, shortName)
+  return existsSync(join(bare, 'package.json')) ? bare : null
 }
 
 /** Whether a fresh fork build is needed for the currently pinned commit. */
@@ -547,13 +563,12 @@ export function injectUpstream(options = {}) {
 
   const patched = []
   for (const patchFile of patchFiles) {
-    const packageName = patchPackageName(patchFile)
-    if (packageName === null) continue
-    const shortName = packageName.slice('@deepseek-ai/'.length)
-    const packageDir = join(scope, shortName)
-    if (!existsSync(join(packageDir, 'package.json'))) continue
+    const shortName = patchPackageName(patchFile)
+    if (shortName === null) continue
+    const packageDir = findPatchTarget(scope, nodeModulesRoot, shortName)
+    if (packageDir === null) continue
     replayPatch(packageDir, patchFile, run)
-    patched.push(packageName)
+    patched.push(shortName)
   }
 
   writeFileSync(
