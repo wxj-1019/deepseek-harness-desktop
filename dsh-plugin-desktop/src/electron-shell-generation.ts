@@ -67,7 +67,14 @@ export class ElectronShellGeneration {
     }
     platform.configureApplication(icon, spec.productName, this.options.buildApplicationMenuItems())
     const origin = new URL(spec.url).origin
-    if (spec.mode === 'advanced') nativeTheme.themeSource = spec.readThemeSource()
+    if (spec.mode === 'advanced') {
+      nativeTheme.themeSource = spec.readThemeSource()
+    } else if (platform.platform === 'win32') {
+      // The compatibility shell keeps the OS frame, whose title bar follows
+      // the system theme; pin it dark so the native bar matches the dark web
+      // surface instead of showing a light strip on light-themed systems.
+      nativeTheme.themeSource = 'dark'
+    }
     const window = new BrowserWindow(desktopWindowOptions(spec, icon, platform.platform, this.options.preloadPath))
     window.accessibleTitle = spec.windowTitle
     platform.configureWindow(window)
