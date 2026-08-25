@@ -67,18 +67,14 @@ describe('compatibility BrowserWindow options', () => {
     }
   })
 
-  it('uses a hidden Windows caption with an acrylic strip for the frosted bar', () => {
+  it('uses a hidden Windows caption with a solid dark backing', () => {
     const options = compatibilityWindowOptions(spec, {} as NativeImage, 'win32', preload)
 
     expect(options.title).toBe('DeepSeek Harness Desktop')
     expect(options.autoHideMenuBar).toBe(true)
     expect(options.titleBarStyle).toBe('hidden')
-    expect(options.titleBarOverlay).toEqual({
-      color: '#00000000',
-      symbolColor: '#eaf2fc',
-      height: 32,
-    })
-    expect(options.backgroundMaterial).toBe('acrylic')
+    expect(options.titleBarOverlay).toBeUndefined()
+    expect(options.backgroundColor).toBe('#0d1523')
   })
 
   it('rejects an advanced spec before BrowserWindow construction', () => {

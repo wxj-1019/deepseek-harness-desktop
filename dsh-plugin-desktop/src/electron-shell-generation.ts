@@ -2,6 +2,7 @@ import {
   app,
   BrowserWindow,
   dialog,
+  ipcMain,
   Menu,
   nativeImage,
   nativeTheme,
@@ -15,6 +16,12 @@ import { applicationNeedsReveal, revealApplication } from './electron-reveal.ts'
 import type { ElectronPlatformStrategy } from './electron-platform.ts'
 import type { DesktopNotification, DesktopShellSpec } from './runtime.ts'
 import { prepareTrayIcon } from './tray-icons.ts'
+import {
+  DESKTOP_TITLEBAR_CLOSE_CHANNEL,
+  DESKTOP_TITLEBAR_MINIMIZE_CHANNEL,
+  DESKTOP_TITLEBAR_TOGGLE_CHANNEL,
+} from './titlebar-bridge-contract.ts'
+import { titleBarPageUrl } from './titlebar-page.ts'
 import { desktopWindowOptions } from './window-options.ts'
 import { WINDOWS_TITLEBAR_HEIGHT } from './window-chrome.ts'
 
@@ -82,35 +89,69 @@ export class ElectronShellGeneration {
     platform.configureWindow(window)
     this.window = window
 
-    // On Windows compatibility mode the frosted caption strip (acrylic) owns
-    // the top of the frame; host the web client in a WebContentsView below it
-    // so every 100vh assumption matches the real content viewport.
+    // On Windows compatibility mode the caption strip is a transparent
+    // WebContentsView floating over the full-height web client; its
+    // backdrop-filter blurs the content below into a frosted bar (the system
+    // acrylic material does not render on every Windows build, so the blur is
+    // done in-page). The web client keeps the full window viewport, so every
+    // 100vh layout assumption stays correct.
     let contentView: Electron.WebContentsView | undefined
+    let captionView: Electron.WebContentsView | undefined
     const applyContentBounds = (): void => {
       if (contentView === undefined) return
       const size = window.getContentSize()
       const width = size[0] ?? 0
       const height = size[1] ?? 0
+      // The web client lives below the caption strip so its viewport (100vh)
+      // matches the visible content area and nothing is covered or clipped.
       contentView.setBounds({
         x: 0,
         y: WINDOWS_TITLEBAR_HEIGHT,
         width,
         height: Math.max(0, height - WINDOWS_TITLEBAR_HEIGHT),
       })
+      captionView?.setBounds({ x: 0, y: 0, width, height: WINDOWS_TITLEBAR_HEIGHT })
     }
+    let detachTitleBar: (() => void) | undefined
     if (spec.mode === 'compatibility' && platform.platform === 'win32') {
-      contentView = new WebContentsView({
-        webPreferences: {
-          preload: this.options.preloadPath,
-          contextIsolation: true,
-          nodeIntegration: false,
-          sandbox: true,
-          webSecurity: true,
-        },
-      })
+      const webPreferences = {
+        preload: this.options.preloadPath,
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        webSecurity: true,
+      }
+      contentView = new WebContentsView({ webPreferences })
+      captionView = new WebContentsView({ webPreferences })
+      // addChildView stacks in order: content first, caption on top.
       window.contentView.addChildView(contentView)
+      window.contentView.addChildView(captionView)
       applyContentBounds()
       window.on('resize', applyContentBounds)
+      // The caption page hosts the drawn window controls over IPC; ignore any
+      // message whose sender is not this window's caption webContents.
+      const accepts = (sender: Electron.WebContents): boolean =>
+        sender.id === captionView?.webContents.id && !window.isDestroyed()
+      const onMinimize = (event: Electron.IpcMainEvent): void => {
+        if (accepts(event.sender)) window.minimize()
+      }
+      const onToggle = (event: Electron.IpcMainEvent): void => {
+        if (!accepts(event.sender)) return
+        if (window.isMaximized()) window.unmaximize()
+        else window.maximize()
+      }
+      const onClose = (event: Electron.IpcMainEvent): void => {
+        if (accepts(event.sender)) window.close()
+      }
+      ipcMain.on(DESKTOP_TITLEBAR_MINIMIZE_CHANNEL, onMinimize)
+      ipcMain.on(DESKTOP_TITLEBAR_TOGGLE_CHANNEL, onToggle)
+      ipcMain.on(DESKTOP_TITLEBAR_CLOSE_CHANNEL, onClose)
+      detachTitleBar = () => {
+        ipcMain.off(DESKTOP_TITLEBAR_MINIMIZE_CHANNEL, onMinimize)
+        ipcMain.off(DESKTOP_TITLEBAR_TOGGLE_CHANNEL, onToggle)
+        ipcMain.off(DESKTOP_TITLEBAR_CLOSE_CHANNEL, onClose)
+      }
+      void captionView.webContents.loadURL(titleBarPageUrl())
     }
     const contents = contentView?.webContents ?? window.webContents
 
@@ -221,6 +262,8 @@ export class ElectronShellGeneration {
       contents.off('render-process-gone', rendererGone)
       contents.off('did-fail-load', loadFailed)
       tray?.off('click', show)
+      detachTitleBar?.()
+      if (captionView !== undefined) window.contentView.removeChildView(captionView)
       if (contentView !== undefined) window.contentView.removeChildView(contentView)
     }
 

@@ -244,6 +244,10 @@ const electron = vi.hoisted(() => {
     templateIcon,
     Tray,
     trays,
+    ipcMain: {
+      on: vi.fn(),
+      off: vi.fn(),
+    },
     webContents,
     WebContentsView,
     webContentsViewOptions,
@@ -254,6 +258,7 @@ const electron = vi.hoisted(() => {
 
 vi.mock('electron', () => ({
   app: electron.app,
+  ipcMain: electron.ipcMain,
   BrowserWindow: electron.BrowserWindow,
   dialog: electron.dialog,
   Menu: electron.Menu,

@@ -38,16 +38,11 @@ export function compatibilityWindowOptions(
   }
   if (platform === 'win32') {
     options.autoHideMenuBar = true
-    // The top strip is a system acrylic caption (window controls drawn as a
-    // transparent overlay); the web client lives in a WebContentsView below
-    // it, so the caption stays frosted without any CSS patches.
+    // The top strip is a transparent acrylic caption; the window loads an
+    // in-app title-bar page (drag region + drawn window controls over IPC)
+    // because the native overlay layer would cover the system material.
     options.titleBarStyle = 'hidden'
-    options.titleBarOverlay = {
-      color: '#00000000',
-      symbolColor: '#eaf2fc',
-      height: WINDOWS_TITLEBAR_HEIGHT,
-    }
-    options.backgroundColor = '#00000000'
+    options.backgroundColor = '#0d1523'
     options.backgroundMaterial = 'acrylic'
   }
   return options
