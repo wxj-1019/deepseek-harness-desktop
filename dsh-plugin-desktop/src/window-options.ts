@@ -36,7 +36,20 @@ export function compatibilityWindowOptions(
       webSecurity: true,
     },
   }
-  if (platform === 'win32') options.autoHideMenuBar = true
+  if (platform === 'win32') {
+    options.autoHideMenuBar = true
+    // The top strip is a system acrylic caption (window controls drawn as a
+    // transparent overlay); the web client lives in a WebContentsView below
+    // it, so the caption stays frosted without any CSS patches.
+    options.titleBarStyle = 'hidden'
+    options.titleBarOverlay = {
+      color: '#00000000',
+      symbolColor: '#eaf2fc',
+      height: WINDOWS_TITLEBAR_HEIGHT,
+    }
+    options.backgroundColor = '#00000000'
+    options.backgroundMaterial = 'acrylic'
+  }
   return options
 }
 

@@ -96,15 +96,39 @@ const electron = vi.hoisted(() => {
   const webContents = {
     executeJavaScript: vi.fn(async (_code: string, _userGesture?: boolean) => null as string | null),
     getZoomLevel: vi.fn(() => zoomLevel),
+    loadURL,
     on: vi.fn(),
+    once: vi.fn(),
     off: vi.fn(),
     setZoomLevel: vi.fn((level: number) => { zoomLevel = level }),
     setWindowOpenHandler: vi.fn(),
   }
   const nativeTheme = { themeSource: 'system' }
+  const webContentsViewOptions: unknown[] = []
+  const webContentsViewBounds: { x: number, y: number, width: number, height: number }[] = []
+  const attachedChildViews: unknown[] = []
+
+  class WebContentsView {
+    readonly webContents = webContents
+
+    constructor(options: unknown) {
+      webContentsViewOptions.push(options)
+    }
+
+    setBounds(bounds: { x: number, y: number, width: number, height: number }): void {
+      webContentsViewBounds.push(bounds)
+    }
+  }
 
   class BrowserWindow {
     readonly webContents = webContents
+    readonly contentView = {
+      addChildView: (view: unknown) => { attachedChildViews.push(view) },
+      removeChildView: (view: unknown) => {
+        const index = attachedChildViews.indexOf(view)
+        if (index >= 0) attachedChildViews.splice(index, 1)
+      },
+    }
     accessibleTitle = ''
 
     constructor(options: unknown) {
@@ -113,6 +137,7 @@ const electron = vi.hoisted(() => {
       browserWindows.push(this)
     }
 
+    getContentSize = vi.fn(() => [1280, 840] as const)
     readonly isDestroyed = vi.fn(() => false)
     readonly isFocused = vi.fn(() => false)
     readonly isVisible = vi.fn(() => false)
@@ -220,6 +245,10 @@ const electron = vi.hoisted(() => {
     Tray,
     trays,
     webContents,
+    WebContentsView,
+    webContentsViewOptions,
+    webContentsViewBounds,
+    attachedChildViews,
   }
 })
 
@@ -234,6 +263,7 @@ vi.mock('electron', () => ({
   Notification: electron.Notification,
   shell: electron.shell,
   Tray: electron.Tray,
+  WebContentsView: electron.WebContentsView,
 }))
 
 const spec: DesktopShellSpec = {
@@ -262,6 +292,9 @@ describe('Electron desktop runtime', () => {
     electron.browserWindowOptions.length = 0
     electron.browserWindowThemeSources.length = 0
     electron.browserWindows.length = 0
+    electron.webContentsViewOptions.length = 0
+    electron.webContentsViewBounds.length = 0
+    electron.attachedChildViews.length = 0
     electron.trays.length = 0
     electron.applicationMenuTemplates.length = 0
     electron.menuTemplates.length = 0
@@ -813,7 +846,10 @@ describe('Electron desktop runtime', () => {
     await runtime.mountScheduled()
 
     const window = electron.browserWindows[0]
-    const ready = window?.once.mock.calls.find(([event]) => event === 'ready-to-show')?.[1]
+    // The compatibility shell shows on the content view's first finished load
+    // (win32 hosts the web client in a WebContentsView below the caption).
+    const ready = electron.webContents.once.mock.calls.find(([event]) => event === 'did-finish-load')?.[1]
+      ?? window?.once.mock.calls.find(([event]) => event === 'ready-to-show')?.[1]
     const activate = electron.app.on.mock.calls.find(([event]) => event === 'activate')?.[1]
     const trayClick = electron.trays[0]?.on.mock.calls.find(([event]) => event === 'click')?.[1]
     const close = electron.browserWindowOn.mock.calls.find(([event]) => event === 'close')?.[1]

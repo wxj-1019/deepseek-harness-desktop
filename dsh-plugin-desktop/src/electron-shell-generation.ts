@@ -8,6 +8,7 @@ import {
   Notification,
   shell,
   Tray,
+  WebContentsView,
 } from 'electron'
 import { formatDesktopExitCode } from './desktop-logger.ts'
 import { applicationNeedsReveal, revealApplication } from './electron-reveal.ts'
@@ -15,6 +16,7 @@ import type { ElectronPlatformStrategy } from './electron-platform.ts'
 import type { DesktopNotification, DesktopShellSpec } from './runtime.ts'
 import { prepareTrayIcon } from './tray-icons.ts'
 import { desktopWindowOptions } from './window-options.ts'
+import { WINDOWS_TITLEBAR_HEIGHT } from './window-chrome.ts'
 
 const MIN_ZOOM_LEVEL = -4
 const MAX_ZOOM_LEVEL = 4
@@ -80,6 +82,38 @@ export class ElectronShellGeneration {
     platform.configureWindow(window)
     this.window = window
 
+    // On Windows compatibility mode the frosted caption strip (acrylic) owns
+    // the top of the frame; host the web client in a WebContentsView below it
+    // so every 100vh assumption matches the real content viewport.
+    let contentView: Electron.WebContentsView | undefined
+    const applyContentBounds = (): void => {
+      if (contentView === undefined) return
+      const size = window.getContentSize()
+      const width = size[0] ?? 0
+      const height = size[1] ?? 0
+      contentView.setBounds({
+        x: 0,
+        y: WINDOWS_TITLEBAR_HEIGHT,
+        width,
+        height: Math.max(0, height - WINDOWS_TITLEBAR_HEIGHT),
+      })
+    }
+    if (spec.mode === 'compatibility' && platform.platform === 'win32') {
+      contentView = new WebContentsView({
+        webPreferences: {
+          preload: this.options.preloadPath,
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+          webSecurity: true,
+        },
+      })
+      window.contentView.addChildView(contentView)
+      applyContentBounds()
+      window.on('resize', applyContentBounds)
+    }
+    const contents = contentView?.webContents ?? window.webContents
+
     const show = (): void => { this.show() }
     const activate = (): void => {
       if (applicationNeedsReveal(window, platform.platform)) this.show()
@@ -96,11 +130,11 @@ export class ElectronShellGeneration {
       if (action === undefined) return
       event.preventDefault()
       if (action === 'reset') {
-        window.webContents.setZoomLevel(0)
+        contents.setZoomLevel(0)
         return
       }
       const step = action === 'in' ? 1 : -1
-      window.webContents.setZoomLevel(clampedZoomLevel(window.webContents.getZoomLevel() + step))
+      contents.setZoomLevel(clampedZoomLevel(contents.getZoomLevel() + step))
     }
     const navigate = (event: Electron.Event<Electron.WebContentsWillFrameNavigateEventParams>): void => {
       if (!event.isMainFrame) return
@@ -152,12 +186,12 @@ export class ElectronShellGeneration {
     window.on('close', close)
     window.on('focus', clearAttention)
     window.on('page-title-updated', preserveBlankTitle)
-    window.webContents.on('before-input-event', handleZoomShortcut)
-    window.webContents.on('will-frame-navigate', navigate)
-    window.webContents.on('will-redirect', redirect)
-    window.webContents.on('render-process-gone', rendererGone)
-    window.webContents.on('did-fail-load', loadFailed)
-    window.webContents.setWindowOpenHandler(({ url }) => {
+    contents.on('before-input-event', handleZoomShortcut)
+    contents.on('will-frame-navigate', navigate)
+    contents.on('will-redirect', redirect)
+    contents.on('render-process-gone', rendererGone)
+    contents.on('did-fail-load', loadFailed)
+    contents.setWindowOpenHandler(({ url }) => {
       try {
         const target = new URL(url)
         if (target.protocol === 'https:' || target.protocol === 'http:' || target.protocol === 'mailto:') {
@@ -170,7 +204,7 @@ export class ElectronShellGeneration {
       }
       return { action: 'deny' }
     })
-    window.once('ready-to-show', show)
+    contents.once('did-finish-load', show)
     let tray: Tray | undefined
     this.cleanupListeners = () => {
       app.off('activate', activate)
@@ -179,16 +213,19 @@ export class ElectronShellGeneration {
       window.off('focus', clearAttention)
       window.off('page-title-updated', preserveBlankTitle)
       window.off('ready-to-show', show)
-      window.webContents.off('before-input-event', handleZoomShortcut)
-      window.webContents.off('will-frame-navigate', navigate)
-      window.webContents.off('will-redirect', redirect)
-      window.webContents.off('render-process-gone', rendererGone)
-      window.webContents.off('did-fail-load', loadFailed)
+      window.off('resize', applyContentBounds)
+      contents.off('did-finish-load', show)
+      contents.off('before-input-event', handleZoomShortcut)
+      contents.off('will-frame-navigate', navigate)
+      contents.off('will-redirect', redirect)
+      contents.off('render-process-gone', rendererGone)
+      contents.off('did-fail-load', loadFailed)
       tray?.off('click', show)
+      if (contentView !== undefined) window.contentView.removeChildView(contentView)
     }
 
     try {
-      await window.loadURL(spec.url)
+      await contents.loadURL(spec.url)
       tray = new Tray(prepareTrayIcon(spec.trayIcons, platform.platform))
       this.tray = tray
       tray.setToolTip(spec.productName)
