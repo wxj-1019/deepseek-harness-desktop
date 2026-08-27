@@ -35,8 +35,8 @@ Current release installers support Windows x64 and macOS Universal. No extra env
 
 | Platform | Download | Installation |
 | --- | --- | --- |
-| Windows x64 | [Download installer](https://www.dshdesktop.cn/api/downloads/windows) | Run the NSIS installer and follow its prompts |
-| macOS Universal | [Download DMG](https://www.dshdesktop.cn/api/downloads/mac) | Open the DMG and drag DSH Desktop into Applications |
+| Windows x64 | [Download installer](https://github.com/wxj-1019/deepseek-harness-desktop/releases/latest) | Run the NSIS installer and follow its prompts |
+| macOS Universal | [Download DMG](https://github.com/wxj-1019/deepseek-harness-desktop/releases/latest) | Open the DMG and drag DSH Desktop into Applications |
 
 See the [user guide](docs/user-guide.en.md) and [FAQ](docs/faq.en.md) for plugin commands, platform details, and troubleshooting.
 

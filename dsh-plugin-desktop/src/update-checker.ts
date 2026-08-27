@@ -1,10 +1,11 @@
-/** Headless version checks against the public DSH Desktop release service. */
+/** Headless version checks against the DSH Desktop GitHub release feed. */
 
-/** Public endpoint returning the latest stable DSH Desktop version. */
-export const DESKTOP_VERSION_ENDPOINT = 'https://www.dshdesktop.cn/api/desktop/version'
+/** GitHub Releases API endpoint for the latest stable desktop release. */
+export const DESKTOP_VERSION_ENDPOINT =
+  'https://api.github.com/repos/wxj-1019/deepseek-harness-desktop/releases/latest'
 
-/** Maximum response body bytes accepted from the version service. */
-export const MAX_VERSION_RESPONSE_BYTES = 4 * 1024
+/** Maximum response body bytes accepted from the release service. */
+export const MAX_VERSION_RESPONSE_BYTES = 64 * 1024
 
 /** Strictly parsed SemVer components. Numeric components remain strings to avoid overflow. */
 export interface ParsedSemVer {
@@ -97,7 +98,11 @@ export async function checkForStableUpdate(
 
   const init: RequestInit = {
     method: 'GET',
-    headers: { Accept: 'application/json' },
+    headers: {
+      Accept: 'application/json',
+      // The GitHub Releases API rejects requests without a user agent.
+      'User-Agent': 'DSH-Desktop-Updater',
+    },
     cache: 'no-store',
     redirect: 'error',
     ...(options.signal === undefined ? {} : { signal: options.signal }),
@@ -169,8 +174,22 @@ function parseVersionResponse(body: string): ParsedSemVer | null {
   } catch {
     return null
   }
-  if (!isRecord(value) || typeof value.version !== 'string') return null
-  return parseCanonicalStableVersion(value.version)
+  if (!isRecord(value)) return null
+  // GitHub Releases reports the tag ("v2.0.9"); the legacy desktop service
+  // reported a bare version field. Accept both spellings of the same value.
+  const version = typeof value.tag_name === 'string'
+    ? value.tag_name
+    : typeof value.version === 'string'
+      ? value.version
+      : undefined
+  if (version === undefined) return null
+  return parseStableVersion(version)
+}
+
+/** Parse a stable version that may carry the canonical release `v` prefix. */
+function parseStableVersion(input: string): ParsedSemVer | null {
+  const parsed = parseSemVer(input)
+  return parsed !== null && parsed.prerelease.length === 0 ? parsed : null
 }
 
 function parseCanonicalStableVersion(input: string): ParsedSemVer | null {

@@ -9,10 +9,21 @@ import { compareSemVerVersions, parseSemVer } from './update-checker.ts'
 /** Desktop platforms with a fixed installer download endpoint. */
 export type DesktopDownloadPlatform = 'darwin' | 'win32'
 
-/** Fixed download endpoints that record one user-confirmed installer download. */
-export const DESKTOP_DOWNLOAD_URLS: Readonly<Record<DesktopDownloadPlatform, string>> = {
-  darwin: 'https://www.dshdesktop.cn/api/downloads/mac',
-  win32: 'https://www.dshdesktop.cn/api/downloads/windows',
+/** Windows installer asset name produced by the electron-builder NSIS target. */
+const WINDOWS_INSTALLER_NAME = (version: string) => `DSH-Desktop-${version}-x64-Setup.exe`
+
+/**
+ * Fixed download URL for one platform and release version.
+ * Windows installers are served straight from the GitHub release assets; the
+ * macOS endpoint remains the legacy desktop service until a DMG is published.
+ */
+export function desktopDownloadUrl(platform: DesktopDownloadPlatform, version: string): string {
+  validatedPlatform(platform)
+  validatedVersion(version)
+  if (platform === 'win32') {
+    return `https://github.com/wxj-1019/deepseek-harness-desktop/releases/download/v${version}/${WINDOWS_INSTALLER_NAME(version)}`
+  }
+  return 'https://www.dshdesktop.cn/api/downloads/mac'
 }
 
 /** Maximum accepted installer size, in bytes. */
@@ -110,7 +121,7 @@ export async function downloadDesktopUpdate(options: DownloadDesktopUpdateOption
 
   let response: Response
   try {
-    response = await options.request(DESKTOP_DOWNLOAD_URLS[platform], {
+    response = await options.request(desktopDownloadUrl(platform, options.version), {
       method: 'GET',
       cache: 'no-store',
       redirect: 'follow',
@@ -159,9 +170,8 @@ export async function downloadDesktopUpdate(options: DownloadDesktopUpdateOption
 export function desktopUpdateFilename(platform: DesktopDownloadPlatform, version: string): string {
   validatedPlatform(platform)
   validatedVersion(version)
-  const extension = platform === 'darwin' ? 'dmg' : 'exe'
-  const platformName = platform === 'darwin' ? 'mac' : 'windows'
-  return `DSH-Desktop-${version}-${platformName}.${extension}`
+  if (platform === 'win32') return WINDOWS_INSTALLER_NAME(version)
+  return `DSH-Desktop-${version}-mac.dmg`
 }
 
 /** Remember a downloaded installer until an upgraded application resolves its retention. */

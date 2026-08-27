@@ -35,8 +35,8 @@ DSH Desktop 将 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harne
 
 | 平台 | 下载 | 安装方式 |
 | --- | --- | --- |
-| Windows x64 | [下载安装程序](https://www.dshdesktop.cn/api/downloads/windows) | 运行 NSIS 安装程序并按提示完成安装 |
-| macOS Universal | [下载 DMG](https://www.dshdesktop.cn/api/downloads/mac) | 打开 DMG，将 DSH Desktop 拖入 Applications |
+| Windows x64 | [下载安装程序](https://github.com/wxj-1019/deepseek-harness-desktop/releases/latest) | 运行 NSIS 安装程序并按提示完成安装 |
+| macOS Universal | [下载 DMG](https://github.com/wxj-1019/deepseek-harness-desktop/releases/latest) | 打开 DMG，将 DSH Desktop 拖入 Applications |
 
 详细步骤、插件命令和故障排查见[用户指南](docs/user-guide.md)与[常见问题](docs/faq.md)。
 

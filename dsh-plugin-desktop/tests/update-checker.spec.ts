@@ -12,6 +12,10 @@ function versionResponse(version: unknown, init: ResponseInit = {}): Response {
   return Response.json({ version }, init)
 }
 
+function releaseResponse(tagName: unknown, init: ResponseInit = {}): Response {
+  return Response.json({ tag_name: tagName }, init)
+}
+
 describe('strict SemVer parsing', () => {
   it('accepts a three-part version, optional lowercase v, prerelease, and build metadata', () => {
     expect(parseSemVer('v2.10.3-alpha.1+mac.arm64')).toEqual({
@@ -81,8 +85,32 @@ describe('public Desktop version check', () => {
     })
     const headers = new Headers(calls[0]?.init.headers)
     expect(headers.get('accept')).toBe('application/json')
+    expect(headers.get('user-agent')).toBe('DSH-Desktop-Updater')
     expect(headers.has('if-none-match')).toBe(false)
     expect(headers.has('x-github-api-version')).toBe(false)
+  })
+
+  it('accepts the GitHub release feed format with a leading v tag', async () => {
+    const request: UpdateRequest = async () => releaseResponse('v2.10.0')
+
+    await expect(checkForStableUpdate({
+      currentVersion: '2.9.9',
+      request,
+    })).resolves.toEqual({
+      status: 'update-available',
+      currentVersion: '2.9.9',
+      latestVersion: '2.10.0',
+    })
+  })
+
+  it.each([
+    ['v2.1.0', { version: 'v2.1.0' }],
+    ['tag_name', { tag_name: 'v2.1.0' }],
+  ])('accepts a stable %s release', async (_case, value) => {
+    await expect(checkForStableUpdate({
+      currentVersion: '2.0.0',
+      request: async () => Response.json(value),
+    })).resolves.toMatchObject({ status: 'update-available', latestVersion: '2.1.0' })
   })
 
   it.each([
@@ -108,8 +136,8 @@ describe('public Desktop version check', () => {
   })
 
   it.each([
-    ['leading v', { version: 'v2.1.0' }],
     ['prerelease', { version: '2.1.0-rc.1' }],
+    ['prerelease tag', { tag_name: 'v2.1.0-rc.1' }],
     ['invalid SemVer', { version: '2.01.0' }],
     ['missing version', {}],
     ['non-string version', { version: 2 }],
