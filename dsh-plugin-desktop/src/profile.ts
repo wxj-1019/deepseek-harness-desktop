@@ -834,6 +834,7 @@ export function prepareDesktopProfile(
     const config = {
       ...rowConfig(presets),
       roots: [{ path: shippedPresetRoot(), trust: 'system' }],
+      includeShippedRoot: false,
     }
     if (platform === 'win32'
       && presets.name === UPSTREAM_AGENT_PRESETS_PACKAGE

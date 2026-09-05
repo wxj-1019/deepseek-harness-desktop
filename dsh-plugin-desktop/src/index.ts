@@ -285,7 +285,9 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('settings/updated', (namespace, next) => {
     if (namespace !== UI_LOCALE_SETTINGS_NAMESPACE) return
     const preference = (next as LocaleSettings).preference
-    if (preference === 'zh' || preference === 'en') runtime.setLocalePreference(preference)
+    if (preference === undefined || preference === 'zh' || preference === 'en') {
+      runtime.setLocalePreference(preference)
+    }
   })
   ctx.effect(
     () => runtime.schedule({

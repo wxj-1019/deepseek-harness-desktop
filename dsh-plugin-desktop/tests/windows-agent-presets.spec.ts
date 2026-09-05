@@ -36,6 +36,7 @@ function createRoster(defaultId: string): WindowsAgentPresets {
   return new WindowsAgentPresets(ctx, {
     default: defaultId,
     roots: [{ path: root, trust: 'system' }],
+    includeShippedRoot: false,
     includeUserRoot: false,
   })
 }
