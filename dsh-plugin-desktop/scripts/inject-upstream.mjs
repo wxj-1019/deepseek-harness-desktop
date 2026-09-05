@@ -96,7 +96,11 @@ export function packageInstallPath(nodeModulesRoot, name) {
 /** Resolve the publish slice (package.json `files`) of an upstream package. */
 export function upstreamPackageFiles(pkgDir, pkgJson) {
   const files = Array.isArray(pkgJson.files) ? pkgJson.files : []
-  return files.filter((pattern) => !pattern.startsWith('!') && pattern !== 'package.json')
+  const patterns = files.filter((pattern) => !pattern.startsWith('!') && pattern !== 'package.json')
+  // Bundlers emit hashed sibling chunks (for example lib/api-request-trust-CW1uM_5d.js)
+  // that published `files` lists omit; the fork build must carry them all.
+  if (existsSync(join(pkgDir, 'lib')) && !patterns.includes('lib/*.js')) patterns.push('lib/*.js')
+  return patterns
 }
 
 /** Turn a package.json `files` glob into a regex over relative paths. */

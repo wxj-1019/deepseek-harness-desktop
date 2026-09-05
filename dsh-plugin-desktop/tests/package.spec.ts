@@ -158,7 +158,7 @@ describe('published package surface', () => {
   it('patches app boot to accept an empty patch layer', () => {
     const patchPath = './patches/dsh-app-boot@0.1.1-rc.2.patch'
     expect(workspaceManifest.resolutions).toMatchObject({
-      '@deepseek-ai/dsh-app-boot@npm:0.1.2-alpha.3': expect.stringContaining(patchPath),
+      '@deepseek-ai/dsh-app-boot@npm:0.1.2-rc.1': expect.stringContaining(patchPath),
     })
     const marker = 'if (parsed === void 0 || parsed === null) return [];'
     const patch = readFileSync(new URL(patchPath, workspaceRoot), 'utf8')
@@ -173,7 +173,7 @@ describe('published package surface', () => {
   it('patches the browse backend to skip unreadable directory-looking entries', () => {
     const patchPath = './patches/dsh-host-directory-picker-browse@0.1.1-rc.2.patch'
     expect(workspaceManifest.resolutions).toMatchObject({
-      '@deepseek-ai/dsh-host-directory-picker-browse@npm:0.1.2-alpha.3': expect.stringContaining(patchPath),
+      '@deepseek-ai/dsh-host-directory-picker-browse@npm:0.1.2-rc.1': expect.stringContaining(patchPath),
     })
     const patch = readFileSync(new URL(patchPath, workspaceRoot), 'utf8')
     const installedHost = readFileSync(new URL(
@@ -193,7 +193,7 @@ describe('published package surface', () => {
   it('marks the upstream Workspace browser as the desktop folder-drop target', () => {
     const patchPath = './patches/dsh-client-ui-workspace@0.1.1-rc.2.patch'
     expect(workspaceManifest.resolutions).toMatchObject({
-      '@deepseek-ai/dsh-client-ui-workspace@npm:0.1.2-alpha.3': expect.stringContaining(patchPath),
+      '@deepseek-ai/dsh-client-ui-workspace@npm:0.1.2-rc.1': expect.stringContaining(patchPath),
     })
     const patch = readFileSync(new URL(patchPath, workspaceRoot), 'utf8')
     const installedClient = readFileSync(new URL(
@@ -207,7 +207,7 @@ describe('published package surface', () => {
   it('keeps API selection available after overriding a provider base URL', () => {
     const patchPath = './patches/dsh-client-ui-settings-models@0.1.1-rc.2.patch'
     expect(workspaceManifest.resolutions).toMatchObject({
-      '@deepseek-ai/dsh-client-ui-settings-models@npm:^0.1.2-alpha.3': expect.stringContaining(patchPath),
+      '@deepseek-ai/dsh-client-ui-settings-models@npm:^0.1.2-rc.1': expect.stringContaining(patchPath),
     })
     const patch = readFileSync(new URL(patchPath, workspaceRoot), 'utf8')
     const installedClient = readFileSync(new URL(
@@ -227,7 +227,7 @@ describe('published package surface', () => {
   it('keeps Desktop boot from opening an external browser and uses Electron Node mode for explicit helpers', () => {
     const patchPath = './patches/dsh-web-app@0.1.1-rc.2.patch'
     expect(workspaceManifest.resolutions).toMatchObject({
-      '@deepseek-ai/dsh-web-app@npm:0.1.2-alpha.3': expect.stringContaining(patchPath),
+      '@deepseek-ai/dsh-web-app@npm:0.1.2-rc.1': expect.stringContaining(patchPath),
     })
     const patch = readFileSync(new URL(patchPath, workspaceRoot), 'utf8')
     const installedWebApp = readFileSync(new URL(
@@ -778,7 +778,7 @@ describe('published package surface', () => {
     const installedIndex = readFileSync(join(dirname(win32Manifest), 'lib', 'index.js'), 'utf8')
 
     expect(workspaceManifest.resolutions).toMatchObject({
-      '@deepseek-ai/dsh-win32-process@npm:0.1.2-alpha.3': expect.stringContaining(patchPath),
+      '@deepseek-ai/dsh-win32-process@npm:0.1.2-rc.1': expect.stringContaining(patchPath),
     })
     expect(workspaceManifest.resolutions).not.toHaveProperty(
       '@deepseek-ai/dsh-sandbox-windows-acl@npm:0.1.1-rc.2',
