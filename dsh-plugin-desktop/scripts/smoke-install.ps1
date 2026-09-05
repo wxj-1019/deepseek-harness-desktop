@@ -33,6 +33,12 @@ function Dump-DesktopLogs {
       return
     }
   }
+  foreach ($f in @($stdoutLog, $stderrLog)) {
+    if (Test-Path $f) {
+      Write-Host "[smoke][logs] --- $f ---"
+      Get-Content $f -Tail 60 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "[smoke][logs]   $_" }
+    }
+  }
   Write-Host "[smoke][logs] no desktop log directory found under APPDATA"
 }
 
@@ -52,7 +58,9 @@ Write-Host "[smoke] installed version: $version"
 $home_dir = Join-Path $WorkDir 'home'
 New-Item -ItemType Directory -Force -Path $home_dir | Out-Null
 $env:DSH_DESKTOP_SMOKE = '1'
-$app = Start-Process -FilePath $appExe -WorkingDirectory $installDir -PassThru
+$stdoutLog = Join-Path $WorkDir 'app-stdout.log'
+$stderrLog = Join-Path $WorkDir 'app-stderr.log'
+$app = Start-Process -FilePath $appExe -WorkingDirectory $installDir -PassThru -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
 Write-Host "[smoke] app pid: $($app.Id)"
 
 # 3. Probe for up to 60 seconds: the host process must stay alive and a real
