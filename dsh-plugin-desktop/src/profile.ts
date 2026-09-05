@@ -471,11 +471,11 @@ function loadRecoveryFilteredProfile(
   }
 }
 
-/** Resolve the agent presets shipped by the matching dsh CLI dependency. */
+/** Resolve the agent presets shipped by the matching dsh-agent-presets dependency. */
 export function shippedPresetRoot(moduleUrl: string = import.meta.url): string {
   const require = createRequire(moduleUrl)
   return unpackedAsarPath(
-    join(dirname(require.resolve('@deepseek-ai/dsh/package.json')), 'config', 'agent-presets'),
+    join(dirname(require.resolve('@deepseek-ai/dsh-agent-presets/package.json')), 'presets'),
   )
 }
 
@@ -673,7 +673,7 @@ function assertEffectiveMarketRows(
  * @param marketSelection - machine-level provider request fixed for this generation.
  * @returns root config, profile metadata, and ordered patches.
  */
-export function prepareDesktopProfile(
+export async function prepareDesktopProfile(
   telemetryDisabled: string | undefined = process.env.DSH_TELEMETRY_DISABLED,
   home: string = resolveDshHome(),
   platform: NodeJS.Platform = process.platform,
@@ -682,13 +682,13 @@ export function prepareDesktopProfile(
   marketSelection: DesktopMarketSnapshot = DEFAULT_DESKTOP_MARKET_SNAPSHOT,
   recoveryStatePath?: string,
   hooks: DesktopProfilePreparationHooks = {},
-): PreparedDesktopProfile {
+): Promise<PreparedDesktopProfile> {
   const profileDir = profileName === DESKTOP_PROFILE_NAME
     ? ensureDesktopProfile(home)
     : resolveProfileDir(profileName, home)
   const workspaceChanged = reconcileProfilePnpmWorkspace(profileDir)
   const requiresDependencyMigration = profileDependencyMigrationRequired(profileDir, workspaceChanged, platform)
-  healProfilesModuleFallback({ installAnchor: INSTALL_ANCHOR, home })
+  await healProfilesModuleFallback({ installAnchor: INSTALL_ANCHOR, home })
   // `plugin-management` is the community market's user-facing scope. Startup
   // recovery has its own state file so switching to another provider cannot
   // reapply a stale community-market disable, while a recovery disable always

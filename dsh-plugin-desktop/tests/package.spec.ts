@@ -323,12 +323,12 @@ describe('published package surface', () => {
     const applyRecovered = main.indexOf('Object.entries(shellEnvironmentResolution.updates)')
     const snapshot = main.indexOf('const environment = loadLayeredEnv')
     const install = main.indexOf('const pnpmRuntime = installDesktopPnpmRuntime')
-    const prepare = main.indexOf('let prepared = prepareDesktopProfile')
+    const prepare = main.indexOf('let prepared = await prepareDesktopProfile')
     const installDsh = main.indexOf('const dshRuntime = process.platform === \'win32\'')
     const ownPnpm = main.indexOf('const releasePnpmRuntime = generation.own(')
     const ownDsh = main.indexOf('const releaseDshRuntime = generation.own(')
     const materialize = main.indexOf('await materializeProfile({')
-    const reprepare = main.indexOf('prepared = prepareDesktopProfile(', prepare + 'let prepared'.length)
+    const reprepare = main.indexOf('prepared = await prepareDesktopProfile(', prepare + 'let prepared'.length)
     const pnpmBootstrap = main.indexOf('const desktopPnpmBootstrap: DesktopPnpmBootstrap = {')
     const boot = main.indexOf('const ctx = await boot')
 
@@ -398,7 +398,7 @@ describe('published package surface', () => {
     const stateCommit = main.indexOf('const stateCommit = new DesktopStartupStateCommit({')
     const claim = main.indexOf('const recoveryClaim = await installRecovery.claim()')
     const observeClaim = main.indexOf('stateCommit.observeInstallRecoveryClaim(recoveryClaim)')
-    const prepare = main.indexOf('let prepared = prepareDesktopProfile(')
+    const prepare = main.indexOf('let prepared = await prepareDesktopProfile(')
     const monitor = main.indexOf('const rendererBoot = runtime.beginRendererBootMonitoring({')
     const commitHealthy = main.indexOf('commitHealthy: async () => {', monitor)
     const awaitRenderer = main.indexOf('const [, rendererVerdict] = await Promise.all([')
@@ -473,7 +473,7 @@ describe('published package surface', () => {
     const windows = [...main.matchAll(/await openStartupRecoveryWindow\(/gu)]
       .map(match => match.index)
     const prompt = main.indexOf("if (recoveryClaim.action === 'prompt')")
-    const prepare = main.indexOf('let prepared = prepareDesktopProfile(')
+    const prepare = main.indexOf('let prepared = await prepareDesktopProfile(')
     const commitFailure = main.indexOf('await startupStateCommit.commitFailure({')
 
     expect(windows).toHaveLength(3)

@@ -608,7 +608,7 @@ async function start(): Promise<void> {
         }
       },
     }
-    let prepared = prepareDesktopProfile(
+    let prepared = await prepareDesktopProfile(
       process.env.DSH_TELEMETRY_DISABLED,
       homeDir,
       process.platform,
@@ -662,7 +662,7 @@ async function start(): Promise<void> {
           electronVersion,
           updateLockfile: true,
         })
-        prepared = prepareDesktopProfile(
+        prepared = await prepareDesktopProfile(
           process.env.DSH_TELEMETRY_DISABLED,
           homeDir,
           process.platform,

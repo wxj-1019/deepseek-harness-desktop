@@ -67,18 +67,17 @@ afterEach(() => {
 describe('desktop profile composition', {
   timeout: process.platform === 'win32' ? 10_000 : 5_000,
 }, () => {
-  it('reads packaged Cordis skills from the physical unpacked preset root', () => {
+  it('reads packaged Cordis skills from the physical unpacked preset root', async () => {
     const home = temporaryHome()
     const resources = join(home, 'resources')
-    const archivedDsh = join(resources, 'app.asar', 'node_modules', '@deepseek-ai', 'dsh')
+    const archivedAgentPresets = join(resources, 'app.asar', 'node_modules', '@deepseek-ai', 'dsh-agent-presets')
     const physicalPresetRoot = join(
       resources,
       'app.asar.unpacked',
       'node_modules',
       '@deepseek-ai',
-      'dsh',
-      'config',
-      'agent-presets',
+      'dsh-agent-presets',
+      'presets',
     )
     const skillPath = join(
       physicalPresetRoot,
@@ -88,10 +87,10 @@ describe('desktop profile composition', {
       'SKILL.md',
     )
     mkdirSync(join(resources, 'app.asar', 'lib'), { recursive: true })
-    mkdirSync(archivedDsh, { recursive: true })
+    mkdirSync(archivedAgentPresets, { recursive: true })
     mkdirSync(dirname(skillPath), { recursive: true })
-    writeFileSync(join(archivedDsh, 'package.json'), JSON.stringify({
-      name: '@deepseek-ai/dsh',
+    writeFileSync(join(archivedAgentPresets, 'package.json'), JSON.stringify({
+      name: '@deepseek-ai/dsh-agent-presets',
       exports: { './package.json': './package.json' },
     }) + '\n')
     writeFileSync(skillPath, '# Cordis plugin development\n')
@@ -109,7 +108,7 @@ describe('desktop profile composition', {
     ), 'utf8')).toBe('# Cordis plugin development\n')
   })
 
-  it('adds the Web surface before third-party bundles and removes the launcher bundle duplicate', () => {
+  it('adds the Web surface before third-party bundles and removes the launcher bundle duplicate', async () => {
     expect(desktopBundleList([
       '@deepseek-ai/dsh-base',
       'third-party-one',
@@ -123,7 +122,7 @@ describe('desktop profile composition', {
     ])
   })
 
-  it('repairs a base-only CLI profile without replacing dependencies', () => {
+  it('repairs a base-only CLI profile without replacing dependencies', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const path = join(dir, 'package.json')
@@ -150,7 +149,7 @@ describe('desktop profile composition', {
     expect(repaired.custom.preserved).toBe(true)
   })
 
-  it('migrates the obsolete Desktop bundle before loading a historical profile', () => {
+  it('migrates the obsolete Desktop bundle before loading a historical profile', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const path = join(dir, 'package.json')
@@ -168,7 +167,7 @@ describe('desktop profile composition', {
       },
     }, undefined, 2) + '\n')
 
-    expect(() => prepareDesktopProfile(undefined, home, 'win32')).not.toThrow()
+    await expect(prepareDesktopProfile(undefined, home, 'win32')).resolves.not.toThrow()
     const repaired = JSON.parse(readFileSync(path, 'utf8')) as {
       dsh: { profile: { bundles: string[] } }
     }
@@ -178,7 +177,7 @@ describe('desktop profile composition', {
     ])
   })
 
-  it('marks legacy isolated Profile dependencies for one-time migration', () => {
+  it('marks legacy isolated Profile dependencies for one-time migration', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const modulesDir = join(dir, 'node_modules')
@@ -199,7 +198,7 @@ settings:
   autoInstallPeers: true
 `)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
 
     expect(prepared.requiresDependencyMigration).toBe(true)
     expect(readFileSync(join(dir, 'pnpm-workspace.yaml'), 'utf8')).toContain('nodeLinker: hoisted')
@@ -207,7 +206,7 @@ settings:
     expect(readFileSync(join(dir, 'pnpm-workspace.yaml'), 'utf8')).toContain('customSetting: preserved')
   })
 
-  it('leaves an already-hoisted Profile dependency tree untouched', () => {
+  it('leaves an already-hoisted Profile dependency tree untouched', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const modulesDir = join(dir, 'node_modules')
@@ -218,12 +217,12 @@ packageManager: pnpm@11.7.0
 virtualStoreDirMaxLength: 120
 `)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
 
     expect(prepared.requiresDependencyMigration).toBe(false)
   })
 
-  it('migrates a hoisted Profile dependency tree created by pnpm 9', () => {
+  it('migrates a hoisted Profile dependency tree created by pnpm 9', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const modulesDir = join(dir, 'node_modules')
@@ -234,12 +233,12 @@ packageManager: pnpm@9.12.0
 virtualStoreDirMaxLength: 120
 `)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
 
     expect(prepared.requiresDependencyMigration).toBe(true)
   })
 
-  it('migrates Windows Profile metadata created with the non-Windows virtual store limit', () => {
+  it('migrates Windows Profile metadata created with the non-Windows virtual store limit', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const modulesDir = join(dir, 'node_modules')
@@ -250,12 +249,12 @@ packageManager: pnpm@11.7.0
 virtualStoreDirMaxLength: 120
 `)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'win32')
+    const prepared = await prepareDesktopProfile(undefined, home, 'win32')
 
     expect(prepared.requiresDependencyMigration).toBe(true)
   })
 
-  it('leaves current Windows Profile dependency metadata untouched', () => {
+  it('leaves current Windows Profile dependency metadata untouched', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const modulesDir = join(dir, 'node_modules')
@@ -266,12 +265,12 @@ packageManager: pnpm@11.7.0
 virtualStoreDirMaxLength: 60
 `)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'win32')
+    const prepared = await prepareDesktopProfile(undefined, home, 'win32')
 
     expect(prepared.requiresDependencyMigration).toBe(false)
   })
 
-  it('rejects malformed persistent bundle metadata', () => {
+  it('rejects malformed persistent bundle metadata', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const path = join(dir, 'package.json')
@@ -280,9 +279,9 @@ virtualStoreDirMaxLength: 60
     expect(() => ensureDesktopProfile(home)).toThrow('dsh.profile.bundles must be an array')
   })
 
-  it('assembles the Host shell without replacing the upstream client shell', () => {
+  it('assembles the Host shell without replacing the upstream client shell', async () => {
     const home = temporaryHome()
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
     const patches = prepared.patches as Array<Record<string, unknown>>
     const inserted = patches.flatMap((patch) => {
       const rows = patch.insert
@@ -362,9 +361,9 @@ virtualStoreDirMaxLength: 60
     }))
   })
 
-  it('keeps both Market providers absent until the user explicitly enables one', () => {
+  it('keeps both Market providers absent until the user explicitly enables one', async () => {
     const home = temporaryHome()
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
     const rows = composeEntries([prepared.patches])
 
     expect(prepared.market).toEqual({
@@ -376,9 +375,9 @@ virtualStoreDirMaxLength: 60
       || row.id === DESKTOP_MARKET_IDENTITIES.dshMarket.rowId)).toBe(false)
   })
 
-  it('inserts the community Market as one canonical row only after explicit selection', () => {
+  it('inserts the community Market as one canonical row only after explicit selection', async () => {
     const home = temporaryHome()
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
       requested: 'community-market',
       effective: 'community-market',
       legacyDefaulted: false,
@@ -393,7 +392,7 @@ virtualStoreDirMaxLength: 60
     expect(rows.some(row => row.id === DESKTOP_MARKET_IDENTITIES.dshMarket.rowId)).toBe(false)
   })
 
-  it('loads the exact dshmarket dependency as a direct bundle only after explicit selection', () => {
+  it('loads the exact dshmarket dependency as a direct bundle only after explicit selection', async () => {
     const home = temporaryHome()
     const profileMarketDir = installBundle(home, DESKTOP_MARKET_IDENTITIES.dshMarket.packageName, [
       '- insert:',
@@ -407,7 +406,7 @@ virtualStoreDirMaxLength: 60
     }
     profileManifest.dsh.profile.bundles.push(DESKTOP_MARKET_IDENTITIES.dshMarket.packageName)
     writeFileSync(profileManifestPath, JSON.stringify(profileManifest) + '\n')
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
       requested: 'dsh-market',
       effective: 'dsh-market',
       legacyDefaulted: false,
@@ -425,7 +424,7 @@ virtualStoreDirMaxLength: 60
     expect(rows.some(row => row.id === DESKTOP_MARKET_IDENTITIES.community.rowId)).toBe(false)
   })
 
-  it('keeps the newer Desktop dshmarket when a Profile copy is older', () => {
+  it('keeps the newer Desktop dshmarket when a Profile copy is older', async () => {
     const home = temporaryHome()
     const oldProfileMarketDir = installBundle(home, DESKTOP_MARKET_IDENTITIES.dshMarket.packageName, [
       '- insert:',
@@ -440,7 +439,7 @@ virtualStoreDirMaxLength: 60
     profileManifest.dsh.profile.bundles.push(DESKTOP_MARKET_IDENTITIES.dshMarket.packageName)
     writeFileSync(profileManifestPath, `${JSON.stringify(profileManifest)}\n`)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
       requested: 'dsh-market',
       effective: 'dsh-market',
       legacyDefaulted: false,
@@ -454,7 +453,7 @@ virtualStoreDirMaxLength: 60
     })
   })
 
-  it('does not let community-management disables suppress a third-party market', () => {
+  it('does not let community-management disables suppress a third-party market', async () => {
     const home = temporaryHome()
     const packageName = 'third-party-plugin'
     installBundle(home, packageName, '- insert:\n    - id: third-party-marker\n      name: cordis:example\n')
@@ -472,7 +471,7 @@ virtualStoreDirMaxLength: 60
       profiles: [{ profileName: 'desktop', disabledBundles: [packageName] }],
     }) + '\n')
 
-    const external = prepareDesktopProfile(
+    const external = await prepareDesktopProfile(
       undefined,
       home,
       'darwin',
@@ -485,7 +484,7 @@ virtualStoreDirMaxLength: 60
       id: 'third-party-marker',
     }))
 
-    const community = prepareDesktopProfile(
+    const community = await prepareDesktopProfile(
       undefined,
       home,
       'darwin',
@@ -499,7 +498,7 @@ virtualStoreDirMaxLength: 60
     }))
   })
 
-  it('keeps a startup-recovery disable effective for every market provider', () => {
+  it('keeps a startup-recovery disable effective for every market provider', async () => {
     const home = temporaryHome()
     const packageName = 'third-party-plugin'
     installBundle(home, packageName, '- insert:\n    - id: third-party-marker\n      name: cordis:example\n')
@@ -517,7 +516,7 @@ virtualStoreDirMaxLength: 60
       profiles: [{ profileName: 'desktop', disabledBundles: [packageName] }],
     }) + '\n')
 
-    const prepared = prepareDesktopProfile(
+    const prepared = await prepareDesktopProfile(
       undefined,
       home,
       'darwin',
@@ -531,7 +530,7 @@ virtualStoreDirMaxLength: 60
     }))
   })
 
-  it('filters an unselected dshmarket bundle before resolving or parsing its patch', () => {
+  it('filters an unselected dshmarket bundle before resolving or parsing its patch', async () => {
     const home = temporaryHome()
     const dir = ensureDesktopProfile(home)
     const manifestPath = join(dir, 'package.json')
@@ -542,18 +541,18 @@ virtualStoreDirMaxLength: 60
     writeFileSync(manifestPath, JSON.stringify(manifest, undefined, 2) + '\n')
     installBundle(home, DESKTOP_MARKET_IDENTITIES.dshMarket.packageName, 'not: [valid yaml')
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
     const rows = composeEntries([prepared.patches])
 
     expect(prepared.market.effective).toBe('disabled')
     expect(rows.some(row => row.id === DESKTOP_MARKET_IDENTITIES.dshMarket.rowId)).toBe(false)
   })
 
-  it('fails a conflicting provider identity closed without blocking the core profile', () => {
+  it('fails a conflicting provider identity closed without blocking the core profile', async () => {
     const home = temporaryHome()
     writeFileSync(join(home, 'cordis.patch.yml'), `- insert:\n    - id: community-market\n      name: dsh-community-market\n`)
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin', 'desktop', undefined, {
       requested: 'community-market',
       effective: 'community-market',
       legacyDefaulted: false,
@@ -567,13 +566,13 @@ virtualStoreDirMaxLength: 60
     expect(rows.some(row => row.id === 'webserver')).toBe(true)
   })
 
-  it('rejects a non-canonical dshmarket bundle patch before it reaches the Loader', () => {
+  it('rejects a non-canonical dshmarket bundle patch before it reaches the Loader', async () => {
     expect(() => validateDshMarketBundlePatches([{
       insert: [{ id: 'dsh-market', name: 'unexpected-market' }],
     }])).toThrow('must insert exactly the canonical dsh-market row')
   })
 
-  it('boots a selected Web profile without overriding its compatibility UI rows', () => {
+  it('boots a selected Web profile without overriding its compatibility UI rows', async () => {
     const home = temporaryHome()
     const webDir = join(home, 'profiles', 'web')
     const template = PROFILE_TEMPLATES.web
@@ -590,7 +589,7 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin', 'web')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin', 'web')
     const rows = composeEntries([prepared.patches])
 
     expect(prepared.profile.name).toBe('web')
@@ -608,11 +607,11 @@ virtualStoreDirMaxLength: 60
     }))
   })
 
-  it('projects YAML startup settings into the Host, Web server, and client Loader rows', () => {
+  it('projects YAML startup settings into the Host, Web server, and client Loader rows', async () => {
     const home = temporaryHome()
     writeFileSync(join(home, 'settings.yaml'), 'dsh-desktop:\n  mode: advanced\n  port: 43189\n')
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
     const rows = composeEntries([prepared.patches])
 
     expect(prepared.mode).toBe('advanced')
@@ -637,7 +636,7 @@ virtualStoreDirMaxLength: 60
     expect(rows.find(row => row.id === 'ui-conversation')?.disabled).toBe(false)
   })
 
-  it('reads JSON settings and defaults an absent desktop namespace to compatibility', () => {
+  it('reads JSON settings and defaults an absent desktop namespace to compatibility', async () => {
     const home = temporaryHome()
     const path = join(home, 'desktop-settings.json')
     writeFileSync(path, JSON.stringify({ 'dsh-desktop': { mode: 'advanced' } }))
@@ -654,7 +653,7 @@ virtualStoreDirMaxLength: 60
     expect(desktopShellModeFromSettings({ unrelated: { enabled: true } })).toBe('compatibility')
   })
 
-  it('rejects invalid settings roots, sections, modes, and YAML', () => {
+  it('rejects invalid settings roots, sections, modes, and YAML', async () => {
     expect(() => desktopShellModeFromSettings([])).toThrow('must be a map')
     expect(() => desktopShellModeFromSettings({ 'dsh-desktop': true })).toThrow('settings must be a map')
     expect(() => desktopShellModeFromSettings({ 'dsh-desktop': { mode: 'glass' } })).toThrow(
@@ -672,22 +671,22 @@ virtualStoreDirMaxLength: 60
     expect(() => readDesktopShellMode({ path })).toThrow('invalid settings document')
   })
 
-  it('treats an empty machine-wide patch file as no desktop patches', () => {
+  it('treats an empty machine-wide patch file as no desktop patches', async () => {
     for (const content of ['', '# no machine-wide patches\n']) {
       const home = temporaryHome()
       writeFileSync(join(home, 'cordis.patch.yml'), content)
 
-      expect(() => prepareDesktopProfile(undefined, home, 'win32')).not.toThrow()
+      await expect(prepareDesktopProfile(undefined, home, 'win32')).resolves.not.toThrow()
     }
 
     const invalidHome = temporaryHome()
     writeFileSync(join(invalidHome, 'cordis.patch.yml'), 'not: a patch list\n')
-    expect(() => prepareDesktopProfile(undefined, invalidHome, 'win32')).toThrow(
+    await expect(prepareDesktopProfile(undefined, invalidHome, 'win32')).rejects.toThrow(
       'must be a top-level YAML array of loader patch entries',
     )
   })
 
-  it('keeps the Windows browse panel and desktop pwsh provider without replacing process boundaries', () => {
+  it('keeps the Windows browse panel and desktop pwsh provider without replacing process boundaries', async () => {
     const home = temporaryHome()
     writeFileSync(join(home, 'cordis.patch.yml'), [
       '- id: pwsh-sandbox',
@@ -697,7 +696,7 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const prepared = prepareDesktopProfile(undefined, home, 'win32')
+    const prepared = await prepareDesktopProfile(undefined, home, 'win32')
     const rows = composeEntries([prepared.patches])
     const picker = rows.find(row => row.id === 'directory-picker')
 
@@ -742,7 +741,7 @@ virtualStoreDirMaxLength: 60
     }))
   })
 
-  it('rejects a bundle and user patch that register the same loader entry id', () => {
+  it('rejects a bundle and user patch that register the same loader entry id', async () => {
     const home = temporaryHome()
     const packageName = 'dsh-usage-stats'
     const bundlePatch = [
@@ -766,12 +765,12 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    expect(() => prepareDesktopProfile(undefined, home, 'win32')).toThrow(
+    await expect(prepareDesktopProfile(undefined, home, 'win32')).rejects.toThrow(
       'duplicate loader entry id "usage-stats" in the composed profile',
     )
   })
 
-  it('keeps a Web Client in its owning profile and omits it from desktop', () => {
+  it('keeps a Web Client in its owning profile and omits it from desktop', async () => {
     const home = temporaryHome()
     const packageName = '@linxin666/dsh-client-ui-skin-whale-song'
     installWebClient(home, packageName, { exports: { '.': { import: './index.js' } } })
@@ -784,7 +783,7 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const desktop = prepareDesktopProfile(undefined, home, 'darwin')
+    const desktop = await prepareDesktopProfile(undefined, home, 'darwin')
     const desktopRows = composeEntries([desktop.patches])
 
     expect(desktopRows.map(row => row.id)).not.toContain('missing-skin')
@@ -797,13 +796,13 @@ virtualStoreDirMaxLength: 60
       name: packageName,
     }])
 
-    const web = prepareDesktopProfile(undefined, home, 'darwin', 'web')
+    const web = await prepareDesktopProfile(undefined, home, 'darwin', 'web')
     const webRows = composeEntries([web.patches])
     expect(webRows).toContainEqual({ id: 'missing-skin', name: packageName })
     expect(web.skippedOptionalEntries).toEqual([])
   })
 
-  it('keeps unresolved non-UI package entries fail-loud', () => {
+  it('keeps unresolved non-UI package entries fail-loud', async () => {
     const home = temporaryHome()
     const packageName = '@example/whale-song-theme'
     writeFileSync(join(home, 'cordis.patch.yml'), [
@@ -813,12 +812,12 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const desktop = prepareDesktopProfile(undefined, home, 'darwin')
+    const desktop = await prepareDesktopProfile(undefined, home, 'darwin')
     expect(composeEntries([desktop.patches])).toContainEqual({ id: 'optional-theme', name: packageName })
     expect(desktop.skippedOptionalEntries).toEqual([])
   })
 
-  it('does not treat ordinary array config as nested Loader entries', () => {
+  it('does not treat ordinary array config as nested Loader entries', async () => {
     const home = temporaryHome()
     const packageName = '@example/whale-song-theme'
     installWebClient(home, packageName)
@@ -832,7 +831,7 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
     expect(composeEntries([prepared.patches])).toContainEqual({
       id: 'config-holder',
       name: 'third-party-host-plugin',
@@ -841,7 +840,7 @@ virtualStoreDirMaxLength: 60
     expect(prepared.skippedOptionalEntries).toEqual([])
   })
 
-  it('leaves non-package Loader specifiers unchanged', () => {
+  it('leaves non-package Loader specifiers unchanged', async () => {
     const home = temporaryHome()
     writeFileSync(join(home, 'cordis.patch.yml'), [
       '- insert:',
@@ -850,7 +849,7 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const prepared = prepareDesktopProfile(undefined, home, 'darwin')
+    const prepared = await prepareDesktopProfile(undefined, home, 'darwin')
     expect(composeEntries([prepared.patches])).toContainEqual({
       id: 'builtin-plugin',
       name: 'cordis:example',
@@ -858,7 +857,7 @@ virtualStoreDirMaxLength: 60
     expect(prepared.skippedOptionalEntries).toEqual([])
   })
 
-  it('preserves an explicitly disabled upstream pwsh provider and a third-party replacement', () => {
+  it('preserves an explicitly disabled upstream pwsh provider and a third-party replacement', async () => {
     const home = temporaryHome()
     writeFileSync(join(home, 'cordis.patch.yml'), [
       '- id: pwsh-sandbox',
@@ -870,7 +869,7 @@ virtualStoreDirMaxLength: 60
       '',
     ].join('\n'))
 
-    const prepared = prepareDesktopProfile(undefined, home, 'win32')
+    const prepared = await prepareDesktopProfile(undefined, home, 'win32')
     const rows = composeEntries([prepared.patches])
 
     expect(rows.find(row => row.id === 'pwsh-sandbox')).toEqual(expect.objectContaining({

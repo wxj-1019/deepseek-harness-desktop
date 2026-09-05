@@ -369,7 +369,7 @@ describe('desktop direct bundle management', () => {
     const preview = harness.service.previewDisable(target.bundleId)
     await harness.service.executeDisable(preview.previewId)
 
-    const prepared = prepareDesktopProfile(undefined, options.homeDir, 'darwin', 'desktop', options.statePath)
+    const prepared = await prepareDesktopProfile(undefined, options.homeDir, 'darwin', 'desktop', options.statePath)
     const inserted = prepared.patches.flatMap(patch => Array.isArray(patch.insert) ? patch.insert : [])
     expect(inserted.filter(row => row.id === 'external-marker')).toHaveLength(0)
 
@@ -540,13 +540,13 @@ describe('desktop direct bundle management', () => {
     await harness.service.executeDisable(harness.service.previewDisable(target.bundleId).previewId)
     writeFileSync(join(packageDir, 'cordis.patch.yml'), 'not: a-list\n')
 
-    expect(() => prepareDesktopProfile(
+    await expect(prepareDesktopProfile(
       undefined,
       options.homeDir,
       'darwin',
       'desktop',
       options.statePath,
-    )).not.toThrow()
+    )).resolves.not.toThrow()
     await harness.dispose()
   })
 })
