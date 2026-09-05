@@ -15,6 +15,27 @@ New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
 $installDir = Join-Path $WorkDir 'app'
 $appExe = Join-Path $installDir 'DSH Desktop.exe'
 
+# Dump the desktop's own logs (the fastest signal for a failed Host startup).
+function Dump-DesktopLogs {
+  $candidates = @(
+    (Join-Path $env:APPDATA 'DSH Desktop\logs'),
+    (Join-Path $env:APPDATA 'DSH Desktop')
+  )
+  foreach ($dir in $candidates) {
+    if (Test-Path $dir) {
+      Write-Host "[smoke][logs] --- $dir ---"
+      Get-ChildItem $dir -Filter '*.log' -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 2 | ForEach-Object {
+        Write-Host "[smoke][logs] $($_.Name) (last writes):"
+        Get-Content $_.FullName -Tail 50 -ErrorAction SilentlyContinue |
+          ForEach-Object { Write-Host "[smoke][logs]   $_" }
+      }
+      return
+    }
+  }
+  Write-Host "[smoke][logs] no desktop log directory found under APPDATA"
+}
+
 Write-Host "[smoke] installer: $($installerItem.FullName)"
 Write-Host "[smoke] install dir: $installDir"
 
@@ -55,6 +76,7 @@ while ((Get-Date) -lt $deadline) {
 }
 
 if ($mainWindow -eq $null) {
+  Dump-DesktopLogs
   if ($recoverySeen) {
     throw "recovery assistant appeared instead of the main window (Host startup failed)"
   }
