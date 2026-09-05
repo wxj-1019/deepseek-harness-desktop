@@ -172,6 +172,11 @@ jobs:
     if: needs.changes.outputs.product == 'true'
     runs-on: windows-latest
     steps:
+      - name: Configure Git for Windows checkout
+        shell: bash
+        run: |
+          git config --global core.longpaths true
+          git config --global core.symlinks false
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
