@@ -125,6 +125,11 @@ jobs:
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
         run: yarn workspace dsh-plugin-desktop dist:win
+      - name: Smoke-test the installed app
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem 'dsh-plugin-desktop/dist' -Filter '*.exe' | Select-Object -First 1
+          powershell -ExecutionPolicy Bypass -File 'dsh-plugin-desktop/scripts/smoke-install.ps1' -Installer $setup.FullName
       - name: Build Windows portable archive
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
