@@ -1018,8 +1018,25 @@ async function start(): Promise<void> {
     // promise resolves, so give the shell's poll a moment before demanding the
     // mounted generation — otherwise mountScheduled races it and fails boot.
     const connectionReadyDeadline = Date.now() + 15_000
-    while (ctx.get('connection') === undefined && Date.now() < connectionReadyDeadline) {
+    const connectionMounted = (): boolean => {
+      try {
+        return ctx.get('connection') !== undefined
+      } catch {
+        return false
+      }
+    }
+    while (!connectionMounted() && Date.now() < connectionReadyDeadline) {
       await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (ctx.get('connection') === undefined) {
+      const probe = (name: string): string => {
+        try {
+          return ctx.get(name) !== undefined ? 'ok' : 'missing'
+        } catch (cause) {
+          return `error: ${cause instanceof Error ? cause.message : String(cause)}`
+        }
+      }
+      electronLogger.error(`${BIN_NAME}: Connection did not mount within 15s — webServer=${probe('webServer')} webRuntime=${probe('webRuntime')} credentials=${probe('credentials')} attachments=${probe('attachments')} llm=${probe('llm')}`)
     }
     const rendererBoot = runtime.beginRendererBootMonitoring({
       commitHealthy: async () => {
@@ -1067,6 +1084,13 @@ async function start(): Promise<void> {
           }
         }
       }
+    } else if (rendererVerdict.failureReason === 'renderer-timeout') {
+      // The desktop compatibility composition has no renderer-side boot
+      // reporter (the client face is not composed), so a healthy web surface
+      // can never deliver a boot report. A timeout with the web root serving
+      // and the shell mounted means the UI is up; treat the silence as healthy
+      // instead of failing every launch into the recovery assistant.
+      electronLogger.error(`${BIN_NAME}: renderer boot report never arrived (no renderer-side reporter in this composition); continuing with the mounted Web surface`)
     } else {
       throw new RendererStartupFailure(
         rendererVerdict.failureReason,

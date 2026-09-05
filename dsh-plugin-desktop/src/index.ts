@@ -373,9 +373,15 @@ export function apply(ctx: Context, config: Config): void {
       let fallback: ReturnType<typeof setTimeout> | undefined
       const poll = () => {
         if (disposed) return
-        const connection = ctx.get('connection') as
-          | { authenticatedUrl?(baseUrl: string): string }
-          | undefined
+        const connection = (() => {
+          try {
+            return ctx.get('connection') as
+              | { authenticatedUrl?(baseUrl: string): string }
+              | undefined
+          } catch {
+            return undefined
+          }
+        })()
         if (connection !== undefined) {
           scheduleWith(connection as { authenticatedUrl(baseUrl: string): string })
           return
