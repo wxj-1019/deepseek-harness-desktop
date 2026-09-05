@@ -31,7 +31,7 @@ function installWebClient(
   manifest: Record<string, unknown> = {},
 ): string {
   const webDir = join(home, 'profiles', 'web')
-  const bundles = PROFILE_TEMPLATES.web
+  const bundles = PROFILE_TEMPLATES.web.bundles
   if (bundles === undefined) throw new Error('test requires the shipped Web template')
   initProfile(webDir, bundles)
   const packageDir = join(webDir, 'node_modules', ...packageName.split('/'))
@@ -575,7 +575,7 @@ virtualStoreDirMaxLength: 60
   it('boots a selected Web profile without overriding its compatibility UI rows', () => {
     const home = temporaryHome()
     const webDir = join(home, 'profiles', 'web')
-    const bundles = PROFILE_TEMPLATES.web
+    const bundles = PROFILE_TEMPLATES.web.bundles
     if (bundles === undefined) throw new Error('test requires the shipped Web template')
     initProfile(webDir, bundles)
     writeFileSync(join(webDir, 'cordis.patch.yml'), [

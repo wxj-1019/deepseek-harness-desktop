@@ -103,8 +103,16 @@ if (run('git', ['remote', 'get-url', 'origin'], upstreamDir) !== upstream.reposi
 if (upstreamPackage.version !== upstream.sourceVersion) {
   fail('deepseek-harness package version differs from upstream.json')
 }
+// Packages whose npm publication stopped at 0.1.1-rc.2 (renamed upstream):
+// the desktop still consumes their type surface, so the pinned family check
+// exempts them from the recorded runtime family.
+const LEGACY_RUNTIME_PACKAGES = new Set([
+  '@deepseek-ai/dsh-client-runtime',
+  '@deepseek-ai/dsh-host-apiproxy',
+])
 for (const name of Object.keys(plugin.dependencies).filter(name => name === '@deepseek-ai/dsh' || name.startsWith('@deepseek-ai/dsh-'))) {
-  if (plugin.dependencies[name] !== upstream.runtimePackageVersion) {
+  if (plugin.dependencies[name] !== upstream.runtimePackageVersion
+    && !(LEGACY_RUNTIME_PACKAGES.has(name) && plugin.dependencies[name] === '0.1.1-rc.2')) {
     fail(`${name} must use the recorded DSH runtime package family`)
   }
 }
