@@ -151,8 +151,13 @@ export function desktopAuthenticatedRendererUrl(
     try {
       root = authenticated(base)
     } catch {
-      // Some published Connection builds lose their BrowserAuth under the
-      // Cordis service tracker; fall back to the clean root URL there.
+      // Cordis wraps service calls with a shadow this that has not seen the
+      // constructor-assigned BrowserAuth; read the launch token off the
+      // instance directly and build the authenticated URL by hand.
+      const launchToken = (connection as { browserAuth?: { launchToken?: string } }).browserAuth?.launchToken
+      if (launchToken !== undefined) {
+        root = `${base}?token=${encodeURIComponent(launchToken)}`
+      }
     }
   }
   const url = new URL(root)
