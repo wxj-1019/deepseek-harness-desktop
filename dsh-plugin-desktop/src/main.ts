@@ -1012,6 +1012,15 @@ async function start(): Promise<void> {
     startupStage = 'renderer-startup'
     lifecycleRecorder.transitionStartupStage(startupStage)
     lifecycleRecorder.startRendererBoot()
+    // The shell schedules its native generation from an effect that waits for
+    // the upstream Connection service (the renderer URL must carry the web
+    // session's launch token). Connection can finish mounting after the boot
+    // promise resolves, so give the shell's poll a moment before demanding the
+    // mounted generation — otherwise mountScheduled races it and fails boot.
+    const connectionReadyDeadline = Date.now() + 15_000
+    while (ctx.get('connection') === undefined && Date.now() < connectionReadyDeadline) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
     const rendererBoot = runtime.beginRendererBootMonitoring({
       commitHealthy: async () => {
         lifecycleRecorder.finishRendererBoot({ status: 'healthy' }, 'renderer-failed')
