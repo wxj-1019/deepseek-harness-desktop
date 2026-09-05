@@ -128,6 +128,34 @@ export function desktopRendererUrl(
 }
 
 /**
+ * Web root URL carrying the browser-session launch token minted by the
+ * upstream Connection host (alpha.3 authenticates every index request),
+ * with the desktop mode markers restored beside the token. Falls back to
+ * the unauthenticated URL when no Connection service is mounted.
+ * @param ctx - Host context whose Connection service owns the launch token.
+ * @param port - active loopback Web server port.
+ * @param mode - active native presentation mode.
+ * @param platform - active Electron platform.
+ * @returns the tokenized URL loaded by the BrowserWindow.
+ */
+export function desktopAuthenticatedRendererUrl(
+  ctx: Context,
+  port: number,
+  mode: DesktopShellMode,
+  platform: Context['desktopRuntime']['platform'],
+): string {
+  const base = `http://127.0.0.1:${String(port)}/`
+  const connection = ctx.get('connection') as
+    | { authenticatedUrl(baseUrl: string): string }
+    | undefined
+  const authenticated = connection?.authenticatedUrl
+  const url = new URL(typeof authenticated === 'function' ? authenticated(base) : base)
+  url.searchParams.set('dsh-desktop-mode', mode)
+  url.searchParams.set('dsh-desktop-platform', platform)
+  return url.href
+}
+
+/**
  * Register the Electron shell from active Web carrier values.
  * @param ctx - Host context carrying the Electron adapter and Web carrier.
  * @param config - validated native window values.
@@ -289,28 +317,35 @@ export function apply(ctx: Context, config: Config): void {
       runtime.setLocalePreference(preference)
     }
   })
-  ctx.effect(
-    () => runtime.schedule({
-      ...config,
-      url: desktopRendererUrl(ctx.webServer.port, config.mode, runtime.platform),
-      productName: 'DSH Desktop',
-      windowTitle: 'DeepSeek Harness Desktop',
-      iconPath,
-      trayIcons,
-      readLocalePreference: () => {
-        const preference = (ctx.settings.get(UI_LOCALE_SETTINGS_NAMESPACE) as LocaleSettings | undefined)?.preference
-        return preference === 'zh' || preference === 'en' ? preference : undefined
-      },
-      readThemeSource: () => {
-        const theme = ctx.settings.get(UI_THEME_SETTINGS_NAMESPACE) as ThemeSettings | undefined
-        if (theme === undefined) {
-          throw new Error('dsh-plugin-desktop: advanced shell requires the ui-theme settings namespace')
-        }
-        return theme.preference
-      },
-      requestQuit: appExit,
-      requestModeChange: async mode => settings.update({ mode }),
-    }),
-    'dsh-plugin-desktop: native shell generation',
-  )
+  ctx.inject(['connection'], (connectionCtx) => {
+    connectionCtx.effect(
+      () => runtime.schedule({
+        ...config,
+        url: desktopAuthenticatedRendererUrl(
+          connectionCtx,
+          ctx.webServer.port,
+          config.mode,
+          runtime.platform,
+        ),
+        productName: 'DSH Desktop',
+        windowTitle: 'DeepSeek Harness Desktop',
+        iconPath,
+        trayIcons,
+        readLocalePreference: () => {
+          const preference = (ctx.settings.get(UI_LOCALE_SETTINGS_NAMESPACE) as LocaleSettings | undefined)?.preference
+          return preference === 'zh' || preference === 'en' ? preference : undefined
+        },
+        readThemeSource: () => {
+          const theme = ctx.settings.get(UI_THEME_SETTINGS_NAMESPACE) as ThemeSettings | undefined
+          if (theme === undefined) {
+            throw new Error('dsh-plugin-desktop: advanced shell requires the ui-theme settings namespace')
+          }
+          return theme.preference
+        },
+        requestQuit: appExit,
+        requestModeChange: async mode => settings.update({ mode }),
+      }),
+      'dsh-plugin-desktop: native shell generation',
+    )
+  })
 }

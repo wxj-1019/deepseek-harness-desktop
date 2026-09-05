@@ -205,8 +205,15 @@ try {
     throw new Error(`assembled Windows browse picker listed ${listing.path} instead of ${home}`)
   }
 
-  const expectedUrl = `http://127.0.0.1:${String(ctx.webServer.port)}/?dsh-desktop-mode=advanced&dsh-desktop-platform=win32`
-  if (mountedSpec?.url !== expectedUrl) {
+  console.error('PROBE>', 'connection:', typeof ctx.connection, 'credentials:', typeof ctx.credentials, 'root:', typeof ctx.root)
+  const expectedBase = ctx.connection?.authenticatedUrl !== undefined
+    ? ctx.connection.authenticatedUrl(`http://127.0.0.1:${String(ctx.webServer.port)}/`)
+    : `http://127.0.0.1:${String(ctx.webServer.port)}/`
+  const expectedUrl = new URL(expectedBase)
+  expectedUrl.searchParams.set('dsh-desktop-mode', 'advanced')
+  expectedUrl.searchParams.set('dsh-desktop-platform', 'win32')
+  const expectedHref = expectedUrl.href
+  if (mountedSpec?.url !== expectedHref) {
     throw new Error(`desktop plugin produced an unexpected renderer URL: ${String(mountedSpec?.url)}`)
   }
   if (mountedSpec?.mode !== 'advanced') {
@@ -233,6 +240,7 @@ try {
   const response = await fetch(expectedUrl)
   const html = await response.text()
   if (response.status !== 200) {
+    console.error('BODY>', html.slice(0,400))
     throw new Error(`assembled Web root returned HTTP ${String(response.status)}`)
   }
   const bootMatch = html.match(/(?:window\.__DSH_BOOT__|globalThis\["__DSH_BOOT__"\]) = (\{.*?\})<\/script>/u)

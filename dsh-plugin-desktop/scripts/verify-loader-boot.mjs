@@ -164,7 +164,13 @@ try {
   if (mountedSpec?.mode !== 'compatibility') {
     throw new Error(`desktop plugin produced an unexpected shell mode: ${String(mountedSpec?.mode)}`)
   }
-  if (mountedSpec?.url !== 'http://127.0.0.1:43120/?dsh-desktop-mode=compatibility&dsh-desktop-platform=darwin') {
+  const expectedBase = ctx.connection?.authenticatedUrl !== undefined
+    ? ctx.connection.authenticatedUrl('http://127.0.0.1:43120/')
+    : 'http://127.0.0.1:43120/'
+  const expectedUrl = new URL(expectedBase)
+  expectedUrl.searchParams.set('dsh-desktop-mode', 'compatibility')
+  expectedUrl.searchParams.set('dsh-desktop-platform', 'darwin')
+  if (mountedSpec?.url !== expectedUrl.href) {
     throw new Error(`desktop plugin produced an unexpected renderer URL: ${String(mountedSpec?.url)}`)
   }
 } finally {
