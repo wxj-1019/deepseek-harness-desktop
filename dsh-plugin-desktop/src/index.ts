@@ -330,7 +330,12 @@ export function apply(ctx: Context, config: Config): void {
   })
   ctx.effect(
     () => {
+      // Only the first schedule wins: the token-aware poll and the no-Connection
+      // fallback must never register two native shell generations.
+      let scheduled = false
       const scheduleWith = (connection: { authenticatedUrl(baseUrl: string): string } | undefined) => {
+        if (scheduled || disposed) return
+        scheduled = true
         runtime.schedule({
           ...config,
           url: desktopAuthenticatedRendererUrl(
