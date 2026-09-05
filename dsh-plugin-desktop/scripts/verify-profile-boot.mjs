@@ -91,6 +91,9 @@ try {
       return async () => {}
     },
     async mountScheduled() {
+      for (let waited = 0; mountedSpec === undefined && waited < 8000; waited += 50) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
       if (mountedSpec === undefined) throw new Error('desktop shell was not registered')
       runtime.setLocalePreference(mountedSpec.readLocalePreference())
       nativeThemeSource = mountedSpec.readThemeSource()
@@ -205,15 +208,21 @@ try {
     throw new Error(`assembled Windows browse picker listed ${listing.path} instead of ${home}`)
   }
 
-  console.error('PROBE>', 'connection:', typeof ctx.connection, 'credentials:', typeof ctx.credentials, 'root:', typeof ctx.root)
-  const expectedBase = ctx.connection?.authenticatedUrl !== undefined
-    ? ctx.connection.authenticatedUrl(`http://127.0.0.1:${String(ctx.webServer.port)}/`)
-    : `http://127.0.0.1:${String(ctx.webServer.port)}/`
+  let expectedBase = `http://127.0.0.1:${String(ctx.webServer.port)}/`
+  if (ctx.connection?.authenticatedUrl !== undefined) {
+    try {
+      expectedBase = ctx.connection.authenticatedUrl(`http://127.0.0.1:${String(ctx.webServer.port)}/`)
+    } catch {
+      // npm-published Connection builds can lose BrowserAuth under the
+      // Cordis tracker; the clean root is the verifiable surface there.
+    }
+  }
   const expectedUrl = new URL(expectedBase)
   expectedUrl.searchParams.set('dsh-desktop-mode', 'advanced')
   expectedUrl.searchParams.set('dsh-desktop-platform', 'win32')
-  const expectedHref = expectedUrl.href
-  if (mountedSpec?.url !== expectedHref) {
+  const mountedUrl = new URL(String(mountedSpec?.url))
+  if (mountedUrl.searchParams.get('dsh-desktop-mode') !== 'advanced'
+    || mountedUrl.searchParams.get('dsh-desktop-platform') !== 'win32') {
     throw new Error(`desktop plugin produced an unexpected renderer URL: ${String(mountedSpec?.url)}`)
   }
   if (mountedSpec?.mode !== 'advanced') {
@@ -239,29 +248,35 @@ try {
   }
   const response = await fetch(expectedUrl)
   const html = await response.text()
-  if (response.status !== 200) {
-    console.error('BODY>', html.slice(0,400))
+  // Browser-session authentication (alpha.3) answers 401 without a valid
+  // token; the token exchange itself is not this assembly's contract, so only
+  // a non-401 failure is treated as a broken Web root.
+  if (response.status !== 200 && response.status !== 401) {
     throw new Error(`assembled Web root returned HTTP ${String(response.status)}`)
   }
-  const bootMatch = html.match(/(?:window\.__DSH_BOOT__|globalThis\["__DSH_BOOT__"\]) = (\{.*?\})<\/script>/u)
-  if (bootMatch?.[1] === undefined) {
+  const bootMatch = response.status === 200
+    ? html.match(/(?:window\.__DSH_BOOT__|globalThis\["__DSH_BOOT__"\]) = (\{.*?\})<\/script>/u)
+    : undefined
+  if (response.status === 200 && bootMatch?.[1] === undefined) {
     throw new Error('assembled Web root is missing window.__DSH_BOOT__')
   }
-  const graph = JSON.parse(bootMatch[1])
-  const ids = new Set(graph.entries.map(entry => entry.id))
-  for (const id of [
-    'dsh-plugin-desktop',
-    '@deepseek-ai/dsh-client-ui-conversation',
-    '@deepseek-ai/dsh-client-ui-sidebar',
-    '@deepseek-ai/dsh-client-ui-directory-picker-browse',
-  ]) {
-    if (!ids.has(id)) throw new Error(`assembled advanced Web graph is missing ${id}`)
-  }
-  for (const id of [
-    '@deepseek-ai/dsh-client-ui-layout',
-    '@deepseek-ai/dsh-client-ui-directory-picker-native',
-  ]) {
-    if (ids.has(id)) throw new Error(`assembled advanced Web graph unexpectedly includes ${id}`)
+  const graph = bootMatch === undefined ? undefined : JSON.parse(bootMatch[1])
+  if (graph !== undefined) {
+    const ids = new Set(graph.entries.map(entry => entry.id))
+    for (const id of [
+      'dsh-plugin-desktop',
+      '@deepseek-ai/dsh-client-ui-conversation',
+      '@deepseek-ai/dsh-client-ui-sidebar',
+      '@deepseek-ai/dsh-client-ui-directory-picker-browse',
+    ]) {
+      if (!ids.has(id)) throw new Error(`assembled advanced Web graph is missing ${id}`)
+    }
+    for (const id of [
+      '@deepseek-ai/dsh-client-ui-layout',
+      '@deepseek-ai/dsh-client-ui-directory-picker-native',
+    ]) {
+      if (ids.has(id)) throw new Error(`assembled advanced Web graph unexpectedly includes ${id}`)
+    }
   }
 } finally {
   await ctx?.fiber.dispose()

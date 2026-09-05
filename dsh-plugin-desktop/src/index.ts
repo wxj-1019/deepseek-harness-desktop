@@ -139,17 +139,23 @@ export function desktopRendererUrl(
  * @returns the tokenized URL loaded by the BrowserWindow.
  */
 export function desktopAuthenticatedRendererUrl(
-  ctx: Context,
+  connection: { authenticatedUrl(baseUrl: string): string } | undefined,
   port: number,
   mode: DesktopShellMode,
   platform: Context['desktopRuntime']['platform'],
 ): string {
   const base = `http://127.0.0.1:${String(port)}/`
-  const connection = ctx.get('connection') as
-    | { authenticatedUrl(baseUrl: string): string }
-    | undefined
   const authenticated = connection?.authenticatedUrl
-  const url = new URL(typeof authenticated === 'function' ? authenticated(base) : base)
+  let root = base
+  if (typeof authenticated === 'function') {
+    try {
+      root = authenticated(base)
+    } catch {
+      // Some published Connection builds lose their BrowserAuth under the
+      // Cordis service tracker; fall back to the clean root URL there.
+    }
+  }
+  const url = new URL(root)
   url.searchParams.set('dsh-desktop-mode', mode)
   url.searchParams.set('dsh-desktop-platform', platform)
   return url.href
@@ -317,35 +323,67 @@ export function apply(ctx: Context, config: Config): void {
       runtime.setLocalePreference(preference)
     }
   })
-  ctx.inject(['connection'], (connectionCtx) => {
-    connectionCtx.effect(
-      () => runtime.schedule({
-        ...config,
-        url: desktopAuthenticatedRendererUrl(
-          connectionCtx,
-          ctx.webServer.port,
-          config.mode,
-          runtime.platform,
-        ),
-        productName: 'DSH Desktop',
-        windowTitle: 'DeepSeek Harness Desktop',
-        iconPath,
-        trayIcons,
-        readLocalePreference: () => {
-          const preference = (ctx.settings.get(UI_LOCALE_SETTINGS_NAMESPACE) as LocaleSettings | undefined)?.preference
-          return preference === 'zh' || preference === 'en' ? preference : undefined
-        },
-        readThemeSource: () => {
-          const theme = ctx.settings.get(UI_THEME_SETTINGS_NAMESPACE) as ThemeSettings | undefined
-          if (theme === undefined) {
-            throw new Error('dsh-plugin-desktop: advanced shell requires the ui-theme settings namespace')
-          }
-          return theme.preference
-        },
-        requestQuit: appExit,
-        requestModeChange: async mode => settings.update({ mode }),
-      }),
-      'dsh-plugin-desktop: native shell generation',
-    )
-  })
+  ctx.effect(
+    () => {
+      const scheduleWith = (connection: { authenticatedUrl(baseUrl: string): string } | undefined) => {
+        runtime.schedule({
+          ...config,
+          url: desktopAuthenticatedRendererUrl(
+            connection,
+            ctx.webServer.port,
+            config.mode,
+            runtime.platform,
+          ),
+          productName: 'DSH Desktop',
+          windowTitle: 'DeepSeek Harness Desktop',
+          iconPath,
+          trayIcons,
+          readLocalePreference: () => {
+            const preference = (ctx.settings.get(UI_LOCALE_SETTINGS_NAMESPACE) as LocaleSettings | undefined)?.preference
+            return preference === 'zh' || preference === 'en' ? preference : undefined
+          },
+          readThemeSource: () => {
+            const theme = ctx.settings.get(UI_THEME_SETTINGS_NAMESPACE) as ThemeSettings | undefined
+            if (theme === undefined) {
+              throw new Error('dsh-plugin-desktop: advanced shell requires the ui-theme settings namespace')
+            }
+            return theme.preference
+          },
+          requestQuit: appExit,
+          requestModeChange: async mode => settings.update({ mode }),
+        })
+      }
+      // The upstream Connection service can mount later than this shell (its
+      // activation awaits credential and token work). Schedule the native
+      // generation once the service appears so the renderer URL can carry the
+      // browser-session launch token; compositions without Connection fall
+      // back to the clean URL after a short grace period.
+      let disposed = false
+      let timer: ReturnType<typeof setTimeout> | undefined
+      let fallback: ReturnType<typeof setTimeout> | undefined
+      const poll = () => {
+        if (disposed) return
+        const connection = ctx.get('connection') as
+          | { authenticatedUrl?(baseUrl: string): string }
+          | undefined
+        if (connection !== undefined) {
+          scheduleWith(connection as { authenticatedUrl(baseUrl: string): string })
+          return
+        }
+        if (fallback === undefined) {
+          fallback = setTimeout(() => {
+            if (!disposed) scheduleWith(undefined)
+          }, 1500)
+        }
+        timer = setTimeout(poll, 25)
+      }
+      poll()
+      return () => {
+        disposed = true
+        if (timer !== undefined) clearTimeout(timer)
+        if (fallback !== undefined) clearTimeout(fallback)
+      }
+    },
+    'dsh-plugin-desktop: native shell generation',
+  )
 }

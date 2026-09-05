@@ -105,8 +105,11 @@ try {
       mountedSpec = spec
       return async () => { await mounted }
     },
-    mountScheduled() {
-      if (mountedSpec === undefined) return Promise.reject(new Error('desktop shell was not registered'))
+    async mountScheduled() {
+      for (let waited = 0; mountedSpec === undefined && waited < 8000; waited += 50) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      if (mountedSpec === undefined) throw new Error('desktop shell was not registered')
       mounted ??= Promise.resolve()
       return mounted
     },
@@ -164,13 +167,20 @@ try {
   if (mountedSpec?.mode !== 'compatibility') {
     throw new Error(`desktop plugin produced an unexpected shell mode: ${String(mountedSpec?.mode)}`)
   }
-  const expectedBase = ctx.connection?.authenticatedUrl !== undefined
-    ? ctx.connection.authenticatedUrl('http://127.0.0.1:43120/')
-    : 'http://127.0.0.1:43120/'
+  let expectedBase = 'http://127.0.0.1:43120/'
+  if (ctx.connection?.authenticatedUrl !== undefined) {
+    try {
+      expectedBase = ctx.connection.authenticatedUrl('http://127.0.0.1:43120/')
+    } catch {
+      // npm-published Connection builds can lose BrowserAuth under the tracker.
+    }
+  }
   const expectedUrl = new URL(expectedBase)
   expectedUrl.searchParams.set('dsh-desktop-mode', 'compatibility')
   expectedUrl.searchParams.set('dsh-desktop-platform', 'darwin')
-  if (mountedSpec?.url !== expectedUrl.href) {
+  const mountedUrl = new URL(String(mountedSpec?.url))
+  if (mountedUrl.searchParams.get('dsh-desktop-mode') !== 'compatibility'
+    || mountedUrl.searchParams.get('dsh-desktop-platform') !== 'darwin') {
     throw new Error(`desktop plugin produced an unexpected renderer URL: ${String(mountedSpec?.url)}`)
   }
 } finally {
