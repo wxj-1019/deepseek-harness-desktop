@@ -21,6 +21,12 @@ function Dump-DesktopLogs {
     (Join-Path $env:APPDATA 'DSH Desktop\logs'),
     (Join-Path $env:APPDATA 'DSH Desktop')
   )
+  foreach ($f in @($stdoutLog, $stderrLog)) {
+    if (Test-Path $f) {
+      Write-Host "[smoke][logs] --- $f ---"
+      Get-Content $f -Tail 60 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "[smoke][logs]   $_" }
+    }
+  }
   foreach ($dir in $candidates) {
     if (Test-Path $dir) {
       Write-Host "[smoke][logs] --- $dir ---"
@@ -31,12 +37,6 @@ function Dump-DesktopLogs {
           ForEach-Object { Write-Host "[smoke][logs]   $_" }
       }
       return
-    }
-  }
-  foreach ($f in @($stdoutLog, $stderrLog)) {
-    if (Test-Path $f) {
-      Write-Host "[smoke][logs] --- $f ---"
-      Get-Content $f -Tail 60 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "[smoke][logs]   $_" }
     }
   }
   Write-Host "[smoke][logs] no desktop log directory found under APPDATA"
