@@ -35,7 +35,7 @@ try {
     '  default: minimal',
     '',
   ].join('\n'))
-  const prepared = prepareDesktopProfile('1', home, 'win32')
+  const prepared = await prepareDesktopProfile('1', home, 'win32')
   const hostServicePluginDir = join(
     prepared.profile.dir,
     'node_modules',

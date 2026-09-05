@@ -50,7 +50,7 @@ try {
     stateDir: join(home, 'runtime-commands'),
     environment: process.env,
   })
-  const prepared = prepareDesktopProfile(undefined, home)
+  const prepared = await prepareDesktopProfile(undefined, home)
   const thirdPartyLink = join(prepared.profile.dir, 'node_modules', THIRD_PARTY_NAME)
   const thirdPartyDir = join(home, 'linked-plugins', THIRD_PARTY_NAME)
   const thirdPartyDependencyDir = join(home, 'profiles', 'node_modules', THIRD_PARTY_DEPENDENCY_NAME)
