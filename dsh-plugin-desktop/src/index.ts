@@ -330,9 +330,15 @@ export function apply(ctx: Context, config: Config): void {
   })
   ctx.effect(
     () => {
-      // Only the first schedule wins: the token-aware poll and the no-Connection
-      // fallback must never register two native shell generations.
+      // The renderer URL must carry the web session launch token from the
+      // upstream Connection service, which can finish mounting after this
+      // shell. Poll briefly for the service (its getter throws until
+      // mounted), schedule with the authenticated URL once it appears, and
+      // fall back to the clean URL if it never shows up.
       let scheduled = false
+      let disposed = false
+      let timer: ReturnType<typeof setTimeout> | undefined
+      let fallback: ReturnType<typeof setTimeout> | undefined
       const scheduleWith = (connection: { authenticatedUrl(baseUrl: string): string } | undefined) => {
         if (scheduled || disposed) return
         scheduled = true
@@ -363,27 +369,16 @@ export function apply(ctx: Context, config: Config): void {
           requestModeChange: async mode => settings.update({ mode }),
         })
       }
-      // The upstream Connection service can mount later than this shell (its
-      // activation awaits credential and token work). Schedule the native
-      // generation once the service appears so the renderer URL can carry the
-      // browser-session launch token; compositions without Connection fall
-      // back to the clean URL after a short grace period.
-      let disposed = false
-      let timer: ReturnType<typeof setTimeout> | undefined
-      let fallback: ReturnType<typeof setTimeout> | undefined
       const poll = () => {
-        if (disposed) return
-        const connection = (() => {
-          try {
-            return ctx.get('connection') as
-              | { authenticatedUrl?(baseUrl: string): string }
-              | undefined
-          } catch {
-            return undefined
-          }
-        })()
+        if (disposed || scheduled) return
+        let connection: { authenticatedUrl(baseUrl: string): string } | undefined
+        try {
+          connection = ctx.get('connection')
+        } catch {
+          connection = undefined
+        }
         if (connection !== undefined) {
-          scheduleWith(connection as { authenticatedUrl(baseUrl: string): string })
+          scheduleWith(connection)
           return
         }
         if (fallback === undefined) {
