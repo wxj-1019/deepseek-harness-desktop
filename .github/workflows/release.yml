@@ -10,8 +10,36 @@ permissions:
   contents: write
 
 jobs:
+  # The pinned fork only builds cleanly on Linux, so one Linux job builds and
+  # injects it into the desktop install tree and hands the injected
+  # @deepseek-ai tree to the Windows packaging job.
+  fork-build-linux:
+    name: Build pinned upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.23.2
+      - run: corepack enable
+      - name: Build the pinned upstream and inject it into the desktop tree
+        working-directory: dsh-plugin-desktop
+        run: |
+          corepack pnpm install --frozen-lockfile --ignore-scripts
+          node scripts/inject-upstream.mjs
+      - name: Upload the injected @deepseek-ai tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: injected-deepseek-ai
+          path: dsh-plugin-desktop/node_modules/@deepseek-ai
+          retention-days: 7
+
   build-windows:
     name: Build Windows installer
+    needs: fork-build-linux
     runs-on: windows-latest
     steps:
       - name: Configure Git for Windows checkout
@@ -35,15 +63,25 @@ jobs:
           path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - run: yarn install --immutable
+      - name: Replace @deepseek-ai with the injected fork tree
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force 'dsh-plugin-desktop/node_modules/@deepseek-ai' -ErrorAction SilentlyContinue
+      - uses: actions/download-artifact@v4
+        with:
+          name: injected-deepseek-ai
+          path: dsh-plugin-desktop/node_modules/@deepseek-ai
       - run: yarn workspace dsh-community-market build
       - run: yarn workspace dsh-plugin-desktop build
       - name: Build Windows installer
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
+          DSH_SKIP_UPSTREAM_INJECT: '1'
         run: yarn workspace dsh-plugin-desktop dist:win
       - name: Build Windows portable archive
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
+          DSH_SKIP_UPSTREAM_INJECT: '1'
         run: yarn workspace dsh-plugin-desktop dist:win-portable
       - name: Upload installer for release
         uses: actions/upload-artifact@v4
