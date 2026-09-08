@@ -25,11 +25,15 @@ jobs:
         with:
           node-version: 22.23.2
       - run: corepack enable
-      - name: Build the pinned upstream and inject it into the desktop tree
-        working-directory: dsh-plugin-desktop
+      - run: yarn install --immutable
+      - name: Build the pinned upstream
+        working-directory: deepseek-harness
         run: |
           corepack pnpm install --frozen-lockfile --ignore-scripts
-          node scripts/inject-upstream.mjs
+          corepack pnpm --config.verify-deps-before-run=false run build
+      - name: Inject the fork build into the desktop tree
+        working-directory: dsh-plugin-desktop
+        run: node scripts/inject-upstream.mjs
       - name: Upload the injected @deepseek-ai tree
         uses: actions/upload-artifact@v4
         with:
