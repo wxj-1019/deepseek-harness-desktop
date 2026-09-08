@@ -457,6 +457,30 @@
       {
         "from": "node_modules/@deepseek-ai/dsh-git-graph",
         "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-git-graph"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-client-file-upload",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-client-file-upload"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-experimental-code-runtime-python",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-experimental-code-runtime-python"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-session-format-catalog",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-session-format-catalog"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-session-format-v0-to-v1",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-session-format-v0-to-v1"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-session-format-v1-to-v2",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-session-format-v1-to-v2"
+      },
+      {
+        "from": "node_modules/@deepseek-ai/dsh-http-proxy",
+        "to": "app.asar.unpacked/node_modules/@deepseek-ai/dsh-http-proxy"
       }
     ],
     "toolsets": {
