@@ -26,7 +26,15 @@ for (const name of modules) {
   const moduleDir = join(packageRoot, 'node_modules', name)
   const result = spawnSync(
     process.execPath,
-    [nodeGyp, 'rebuild', '--target', electronVersion, '--arch', process.arch, '--dist-url', 'https://electronjs.org/headers'],
+    // nopt forwards space-separated values to gyp as positional build files;
+    // the `=` form keeps the version an option value.
+    [
+      nodeGyp,
+      'rebuild',
+      `--target=${electronVersion}`,
+      `--arch=${process.arch}`,
+      '--dist-url=https://electronjs.org/headers',
+    ],
     { cwd: moduleDir, env: process.env, stdio: 'inherit' },
   )
   if (result.error !== undefined) throw result.error
