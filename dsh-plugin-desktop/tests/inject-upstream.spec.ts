@@ -4,7 +4,7 @@
  * fixtures; they never run a real upstream build.
  */
 
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -94,6 +94,30 @@ describe('isForkNativePatch', () => {
   it('leaves replayable dsh and non-dsh patches alone', () => {
     expect(inject.isForkNativePatch('dsh-app-boot@0.1.1-rc.2.patch')).toBe(false)
     expect(inject.isForkNativePatch('app-builder-lib@26.15.7.patch')).toBe(false)
+  })
+})
+
+describe('pruneNestedScopeCopies', () => {
+  it('removes nested scope copies that duplicate a scope-root package', () => {
+    const root = tempDir()
+    const scope = join(root, '@deepseek-ai')
+    mkdirSync(join(scope, 'dsh-llm'), { recursive: true })
+    const nested = join(scope, 'dsh', 'node_modules', '@deepseek-ai')
+    mkdirSync(join(nested, 'dsh-llm'), { recursive: true })
+    mkdirSync(join(nested, 'fork-only-package'), { recursive: true })
+    mkdirSync(join(scope, 'dsh', 'node_modules', 'undici'), { recursive: true })
+
+    expect(inject.pruneNestedScopeCopies(scope)).toBe(1)
+    expect(existsSync(join(nested, 'dsh-llm'))).toBe(false)
+    expect(existsSync(join(nested, 'fork-only-package'))).toBe(true)
+    expect(existsSync(join(scope, 'dsh', 'node_modules', 'undici'))).toBe(true)
+  })
+
+  it('returns zero for a scope without nested copies', () => {
+    const root = tempDir()
+    const scope = join(root, '@deepseek-ai')
+    mkdirSync(join(scope, 'dsh-llm'), { recursive: true })
+    expect(inject.pruneNestedScopeCopies(scope)).toBe(0)
   })
 })
 

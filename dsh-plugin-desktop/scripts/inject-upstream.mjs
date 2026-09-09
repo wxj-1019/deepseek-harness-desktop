@@ -168,6 +168,45 @@ export function transformUpstreamManifest(pkgJson, versionIndex) {
   return transformed
 }
 
+/**
+ * Remove nested `node_modules/@deepseek-ai/<pkg>` copies that duplicate a
+ * package at the injected scope root. Registry installs nest older copies
+ * inside meta packages (for example `@deepseek-ai/dsh`); injection replaces
+ * only the package's own files, so the stale nested copy survives and
+ * electron-builder's dependency collector can hoist it above the fork build.
+ * Copies with no scope-root counterpart stay: they are the only resolvable
+ * version of that package.
+ */
+export function pruneNestedScopeCopies(scopeDir) {
+  if (!existsSync(scopeDir)) return 0
+  const rootNames = new Set(
+    readdirSync(scopeDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name),
+  )
+  let pruned = 0
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const current = join(dir, entry.name)
+      if (entry.name === 'node_modules') {
+        const nestedScope = join(current, '@deepseek-ai')
+        if (existsSync(nestedScope)) {
+          for (const pkg of readdirSync(nestedScope)) {
+            if (!rootNames.has(pkg)) continue
+            rmSync(join(nestedScope, pkg), { recursive: true, force: true })
+            pruned += 1
+          }
+        }
+        continue
+      }
+      walk(current)
+    }
+  }
+  walk(scopeDir)
+  return pruned
+}
+
 /** Copy one upstream package's publish slice and converted manifest. */
 export function injectPackageFiles(pkgDir, targetDir, pkgJson, versionIndex) {
   mkdirSync(targetDir, { recursive: true })
@@ -581,6 +620,10 @@ export function injectUpstream(options = {}) {
   }
 
   const patched = []
+  const pruned = pruneNestedScopeCopies(scope)
+  if (pruned > 0) {
+    log(`inject-upstream: pruned ${String(pruned)} nested @deepseek-ai copy(s) that shadow the fork build`)
+  }
   for (const patchFile of patchFiles) {
     const shortName = patchPackageName(patchFile)
     if (shortName === null) continue
