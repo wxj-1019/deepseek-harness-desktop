@@ -168,6 +168,8 @@ jobs:
           name: injected-deepseek-ai
           # The artifact root is node_modules itself (both scopes share it).
           path: dsh-plugin-desktop/node_modules
+      - name: Rebuild Electron-ABI native modules
+        run: yarn workspace dsh-plugin-desktop rebuild:electron-native
       - name: Build Windows installer
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
