@@ -475,6 +475,21 @@ export function patchPackageName(patchFile) {
   return match === null ? null : match[1]
 }
 
+/**
+ * Short names whose desktop patch the pinned fork already implements
+ * natively. The patch stays in resolutions because registry installs
+ * (`yarn check` tests the registry package, not the fork build) still ship
+ * the old behavior; replaying it on the injected fork output fails since the
+ * fork rewrote the patched region.
+ */
+const FORK_NATIVE_PATCHES = new Set(['dsh-llm-deepseek'])
+
+/** Whether a desktop patch is already implemented by the pinned fork build. */
+export function isForkNativePatch(patchFile) {
+  const shortName = patchPackageName(patchFile)
+  return shortName !== null && FORK_NATIVE_PATCHES.has(shortName)
+}
+
 /** Locate the install-tree directory a patched package lives in. */
 export function findPatchTarget(scope, nodeModulesRoot, shortName) {
   const scoped = join(scope, shortName)
@@ -569,6 +584,10 @@ export function injectUpstream(options = {}) {
   for (const patchFile of patchFiles) {
     const shortName = patchPackageName(patchFile)
     if (shortName === null) continue
+    if (isForkNativePatch(patchFile)) {
+      log(`inject-upstream: skipping ${patchFile.split(/[\\/]/u).at(-1) ?? patchFile} (native in the pinned fork)`)
+      continue
+    }
     const packageDir = findPatchTarget(scope, nodeModulesRoot, shortName)
     if (packageDir === null) continue
     replayPatch(packageDir, patchFile, run)

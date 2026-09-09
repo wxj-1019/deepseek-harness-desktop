@@ -85,6 +85,18 @@ describe('patchPackageName', () => {
   })
 })
 
+describe('isForkNativePatch', () => {
+  it('flags patches the pinned fork already implements natively', () => {
+    expect(inject.isForkNativePatch('dsh-llm-deepseek@0.1.1-rc.2.patch')).toBe(true)
+    expect(inject.isForkNativePatch('/tmp/patches/dsh-llm-deepseek@0.1.1-rc.2.patch')).toBe(true)
+  })
+
+  it('leaves replayable dsh and non-dsh patches alone', () => {
+    expect(inject.isForkNativePatch('dsh-app-boot@0.1.1-rc.2.patch')).toBe(false)
+    expect(inject.isForkNativePatch('app-builder-lib@26.15.7.patch')).toBe(false)
+  })
+})
+
 describe('findPatchTarget', () => {
   it('prefers the @deepseek-ai scope and falls back to the bare name', () => {
     const root = tempDir()
