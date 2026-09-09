@@ -119,11 +119,16 @@ jobs:
       - name: Inject the fork build into the desktop tree
         working-directory: dsh-plugin-desktop
         run: node scripts/inject-upstream.mjs
-      - name: Upload the injected @deepseek-ai tree
+      - name: Upload the injected fork tree
         uses: actions/upload-artifact@v4
         with:
           name: injected-deepseek-ai
-          path: dsh-plugin-desktop/node_modules/@deepseek-ai
+          # The fork build also adds non-@deepseek-ai scope packages (the
+          # OpenViking memory plugin) that injected package.jsons reference;
+          # electron-builder's dependency walk needs them in the install tree.
+          path: |
+            dsh-plugin-desktop/node_modules/@deepseek-ai
+            dsh-plugin-desktop/node_modules/@openviking
           retention-days: 7
 
   # The package gate runs once; both artifacts reuse its build output.
@@ -154,14 +159,15 @@ jobs:
           key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
       - run: yarn install --immutable
       - run: yarn workspace dsh-plugin-desktop check:win-package
-      - name: Replace @deepseek-ai with the injected fork tree
+      - name: Replace node_modules scopes with the injected fork tree
         shell: pwsh
         run: |
           Remove-Item -Recurse -Force 'dsh-plugin-desktop/node_modules/@deepseek-ai' -ErrorAction SilentlyContinue
       - uses: actions/download-artifact@v4
         with:
           name: injected-deepseek-ai
-          path: dsh-plugin-desktop/node_modules/@deepseek-ai
+          # The artifact root is node_modules itself (both scopes share it).
+          path: dsh-plugin-desktop/node_modules
       - name: Build Windows installer
         env:
           DSH_PACKAGE_CHECK_ALREADY_RAN: '1'
