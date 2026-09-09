@@ -26,3 +26,11 @@
     printUrl: false
     surfaceContext: true
     trustedHosts: []
+
+# The component library learns packages/client from a source checkout and
+# fails the whole boot when it cannot find one; a packaged desktop launch has
+# no checkout, so leave the plugin (and its settings card) out.
+- id: component-library
+  disabled: !!js true
+- id: ui-component-library
+  disabled: !!js true
