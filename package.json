@@ -44,6 +44,9 @@
     "esbuild": {
       "built": true
     },
+    "fs-ext": {
+      "built": true
+    },
     "koffi": {
       "built": true
     },
