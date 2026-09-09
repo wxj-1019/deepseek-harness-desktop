@@ -1014,21 +1014,24 @@ async function start(): Promise<void> {
     lifecycleRecorder.startRendererBoot()
     // The shell schedules its native generation from an effect that waits for
     // the upstream Connection service (the renderer URL must carry the web
-    // session's launch token). Connection can finish mounting after the boot
-    // promise resolves, so give the shell's poll a moment before demanding the
-    // mounted generation — otherwise mountScheduled races it and fails boot.
-    const connectionReadyDeadline = Date.now() + 15_000
-    const connectionMounted = (): boolean => {
+    // session's launch token). Both the Connection service and the shell's
+    // patch entry can finish mounting after the boot promise resolves, and
+    // the Connection service may mount before the shell has scheduled — so
+    // wait for the shell's registration itself before demanding the mounted
+    // generation. Otherwise mountScheduled races the shell's 25ms scheduling
+    // poll and fails boot, which tears the whole Host tree down for recovery.
+    const shellReadyDeadline = Date.now() + 15_000
+    const shellScheduled = (): boolean => {
       try {
-        return ctx.get('connection') !== undefined
+        return runtime.hasScheduledGeneration()
       } catch {
         return false
       }
     }
-    while (!connectionMounted() && Date.now() < connectionReadyDeadline) {
+    while (!shellScheduled() && Date.now() < shellReadyDeadline) {
       await new Promise(resolve => setTimeout(resolve, 50))
     }
-    if (ctx.get('connection') === undefined) {
+    if (!shellScheduled()) {
       const probe = (name: string): string => {
         try {
           return ctx.get(name) !== undefined ? 'ok' : 'missing'
@@ -1036,7 +1039,7 @@ async function start(): Promise<void> {
           return `error: ${cause instanceof Error ? cause.message : String(cause)}`
         }
       }
-      electronLogger.error(`${BIN_NAME}: Connection did not mount within 15s — webServer=${probe('webServer')} webRuntime=${probe('webRuntime')} credentials=${probe('credentials')} attachments=${probe('attachments')} llm=${probe('llm')}`)
+      electronLogger.error(`${BIN_NAME}: the Cordis shell plugin did not schedule a window within 15s — connection=${probe('connection')} webServer=${probe('webServer')} webRuntime=${probe('webRuntime')} credentials=${probe('credentials')} attachments=${probe('attachments')} llm=${probe('llm')}`)
     }
     const rendererBoot = runtime.beginRendererBootMonitoring({
       commitHealthy: async () => {

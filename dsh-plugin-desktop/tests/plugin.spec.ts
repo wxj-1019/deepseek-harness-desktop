@@ -83,6 +83,7 @@ function createHarness(platform: DesktopRuntime['platform'] = 'darwin'): PluginH
       return async () => {}
     },
     mountScheduled: async () => {},
+    hasScheduledGeneration: () => shell !== undefined,
     show: () => {},
     notifyAttention: () => {},
     registerTrayItem: () => ({ refresh: () => {}, dispose: () => {} }),

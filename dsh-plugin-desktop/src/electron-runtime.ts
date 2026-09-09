@@ -184,6 +184,11 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
   }
 
   /** @inheritdoc */
+  hasScheduledGeneration(): boolean {
+    return this.scheduled !== undefined || this.mountTask !== undefined
+  }
+
+  /** @inheritdoc */
   schedule(spec: DesktopShellSpec): () => Promise<void> {
     if (this.scheduled !== undefined || this.mountTask !== undefined) {
       throw new Error('dsh-plugin-desktop: a native shell generation is already registered')

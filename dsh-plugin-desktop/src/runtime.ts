@@ -203,6 +203,13 @@ export interface DesktopRuntime {
   /** Apply a built-in theme preference to Electron's native appearance. */
   setThemeSource(source: DesktopThemeSource): void
 
+  /**
+   * Whether the shell plugin has registered (or already mounted) a native
+   * window generation. The launcher gates `mountScheduled` on this so the
+   * mount cannot race the shell's own scheduling poll.
+   */
+  hasScheduledGeneration(): boolean
+
   /** Request orderly Cordis teardown followed by an Electron relaunch. */
   requestRestart(): Promise<void>
 

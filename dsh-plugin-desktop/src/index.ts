@@ -371,9 +371,6 @@ export function apply(ctx: Context, config: Config): void {
       }
       const poll = () => {
         if (disposed || scheduled) return
-        let connState = 'unset'
-        try { connState = typeof ctx.get('connection') } catch (cause) { connState = 'get-error: ' + String(cause).slice(0, 80) }
-        { const fsx = require('node:fs'); try { fsx.appendFileSync('C:\\DSHDesktop\\shell-poll-trace.log', new Date().toISOString() + ' state=' + connState + ' scheduled=' + String(scheduled) + '\n') } catch {} }
         let connection: { authenticatedUrl(baseUrl: string): string } | undefined
         try {
           connection = ctx.get('connection')
